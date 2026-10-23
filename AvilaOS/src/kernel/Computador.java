@@ -4,21 +4,24 @@
  */
 package kernel;
 
+import estructuras.Cola;
+
 /**
  *
  * @author Antho
  */
-import estructuras.Cola;
 
 public class Computador {
     private final String id;
     private final MemoriaRAM memoriaRAM;
+    private final Cpu cpu;
     private final Cola<Pcb> colaListos;
     private final Cola<Pcb> colaBloqueados;
 
     public Computador(String id, int capacidadRAM) {
         this.id = id;
         this.memoriaRAM = new MemoriaRAM(capacidadRAM);
+        this.cpu = new Cpu();
         this.colaListos = new Cola<>();
         this.colaBloqueados = new Cola<>();
     }
@@ -29,6 +32,10 @@ public class Computador {
 
     public MemoriaRAM getMemoriaRAM() {
         return memoriaRAM;
+    }
+
+    public Cpu getCpu() {
+        return cpu;
     }
 
     public Cola<Pcb> getColaListos() {
