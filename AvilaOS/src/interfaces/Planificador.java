@@ -2,13 +2,14 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Interface.java to edit this template
  */
-package kernel;
+package interfaces;
 
 import estructuras.Cola;
+import kernel.Cpu;
+import kernel.Pcb;
 
 /**
  * Interfaz base para los algoritmos de planificación.
- * Persona B: Implementar esta interfaz en clases como PlanificadorFCFS, PlanificadorRR, etc.
  */
 public interface Planificador {
     
@@ -24,4 +25,7 @@ public interface Planificador {
      * @param colaListos La cola de procesos listos a verificar.
      */
     void verificarDeadlines(Cola<Pcb> colaListos);
+    
+    
+    Pcb seleccionarSiguienteProceso(Cola<Pcb> colaListos);
 }
