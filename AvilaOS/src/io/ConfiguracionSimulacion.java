@@ -4,7 +4,6 @@
  */
 package io;
 
-
 /**
  * Representa la configuración inicial de la simulación
  * @author Usuario
@@ -23,7 +22,7 @@ public class ConfiguracionSimulacion {
  
 
     public static class ConfigComputador {
-        public int id;
+        public String id;
         public int ramTotal;
         public String politicaInicial;
         public int quantum;
@@ -32,22 +31,22 @@ public class ConfiguracionSimulacion {
     public static class ConfigBuffer {
         public String id;
         public int capacidad;
-        public int computadorAnfitrionId;
+        public String computadorAnfitrionId;
     }
 
     public static class ConfigProceso {
         public String id;
         public String nombre;
+        public String computadorId;
         public String tipo;
         public int prioridad;
-        public int deadline;
-        public int memoriaRequerida;
-        public int computadorAsignadoId;
+        public int memoriaAsignada;
+        public long deadline;
+        public int tiempoRestanteEjecucion;
         
         // Atributos específicos según tipo
-        public int ciclosInstrucciones;    // Para CPU_BOUND / IO_BOUND
-        public String bufferId;            // Para PRODUCTOR / CONSUMIDOR
-        public int frecuenciaCiclos;
-        public int totalElementos;
+        public String bufferAsociadoId;
+        public int ciclosProducirConsumir;
+        public int elementosRequeridos;
     }
 }
