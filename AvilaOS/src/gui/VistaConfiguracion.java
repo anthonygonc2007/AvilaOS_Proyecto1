@@ -4,6 +4,9 @@
  */
 package gui;
 
+import io.GestorJSON;
+import io.ConfiguracionSimulacion;
+
 /**
  *
  * @author Usuario
@@ -28,21 +31,80 @@ public class VistaConfiguracion extends javax.swing.JFrame {
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        CargarArchivo = new javax.swing.JButton();
+        GuardarConfiguracion = new javax.swing.JButton();
+        jLabel1 = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        txtDuracionCiclo = new javax.swing.JTextField();
+        txtNumComp = new javax.swing.JTextField();
+        txtLatenciaRed = new javax.swing.JTextField();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tblComputadores = new javax.swing.JTable();
 
-        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
-        getContentPane().setLayout(layout);
-        layout.setHorizontalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 400, Short.MAX_VALUE)
-        );
-        layout.setVerticalGroup(
-            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 300, Short.MAX_VALUE)
-        );
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        CargarArchivo.setText("Cargar Archivo");
+        CargarArchivo.addActionListener(this::CargarArchivoActionPerformed);
+        getContentPane().add(CargarArchivo, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 50, 151, -1));
+
+        GuardarConfiguracion.setText("Guardar Configuración");
+        getContentPane().add(GuardarConfiguracion, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 20, -1, -1));
+
+        jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel1.setText("Duración del Ciclo:");
+        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 90, -1, -1));
+
+        jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel2.setText("Número de computadores:");
+        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 120, -1, -1));
+
+        jLabel3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel3.setText("Latencia en red (ciclos):");
+        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 160, -1, -1));
+        getContentPane().add(txtDuracionCiclo, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 80, 122, -1));
+        getContentPane().add(txtNumComp, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 120, 126, -1));
+        getContentPane().add(txtLatenciaRed, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 160, 130, -1));
+
+        tblComputadores.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "ID", "RAM (MB)", "Política Inicial", "Quantum"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.Integer.class, java.lang.Integer.class, java.lang.String.class, java.lang.Integer.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+        });
+        tblComputadores.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                tblComputadoresKeyReleased(evt);
+            }
+        });
+        jScrollPane1.setViewportView(tblComputadores);
+
+        getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 20, -1, 200));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
+
+    private void CargarArchivoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CargarArchivoActionPerformed
+    btnCargarArchivo(evt);// TODO add your handling code here:
+    }//GEN-LAST:event_CargarArchivoActionPerformed
+
+    private void tblComputadoresKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_tblComputadoresKeyReleased
+    actualizarTablaComputadores();        // TODO add your handling code here:
+    }//GEN-LAST:event_tblComputadoresKeyReleased
 
     /**
      * @param args the command line arguments
@@ -68,7 +130,85 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         /* Create and display the form */
         java.awt.EventQueue.invokeLater(() -> new VistaConfiguracion().setVisible(true));
     }
+    
+    /**
+     * Carga un archivo JSON con los parametros de la simulacion
+     * @param evt 
+     */
+    private void btnCargarArchivo(java.awt.event.ActionEvent evt) {                                                 
+    javax.swing.JFileChooser seleccionador = new javax.swing.JFileChooser();
+    seleccionador.setDialogTitle("Seleccionar archivo de configuración (.json)");
+    
+    int resultado = seleccionador.showOpenDialog(this);
+    if (resultado == javax.swing.JFileChooser.APPROVE_OPTION) {
+        java.io.File archivoSeleccionado = seleccionador.getSelectedFile();
+        GestorJSON gestor = new GestorJSON();
+        
+        try {
+            ConfiguracionSimulacion config = gestor.cargarConfiguracion(archivoSeleccionado.getAbsolutePath());
+            
+            txtDuracionCiclo.setText(String.valueOf(config.duracionCicloMs));
+            txtLatenciaRed.setText(String.valueOf(config.latenciaRedCiclos));
+            txtNumComp.setText(String.valueOf(config.numComputadores));
+            
+            javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblComputadores.getModel();
+            modelo.setRowCount(0);
+            if (config.computadores != null) {
+                for (ConfiguracionSimulacion.ConfigComputador comp : config.computadores) {
+                    modelo.addRow(new Object[]{
+                        comp.id, 
+                        comp.ramTotal, 
+                        comp.politicaInicial, 
+                        comp.quantum
+                    });
+                }
+            }
+            
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "¡Configuración cargada correctamente!", 
+                "Éxito", 
+                javax.swing.JOptionPane.INFORMATION_MESSAGE);
+                
+        } catch (Exception e) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Error al leer el archivo JSON: " + e.getMessage(), 
+                "Error de Lectura", 
+                javax.swing.JOptionPane.ERROR_MESSAGE);
+        }
+    }
+}
+    
+    /**
+     * Actualiza las filas de la tabla de computadores para que coincidan con el numero declarado en la caja de texto
+     */
+    private void actualizarTablaComputadores() {
+    try {
+        int cantidad = Integer.parseInt(txtNumComp.getText().trim());
+        if (cantidad <= 0) return;
 
+        javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblComputadores.getModel();
+        modelo.setRowCount(0); // Limpiar filas anteriores
+
+        for (int i = 1; i <= cantidad; i++) {
+            // Fila por defecto
+            modelo.addRow(new Object[]{i, 1024, "FCFS", 0});
+        }
+    } catch (NumberFormatException e) {
+        
+    }
+}
+    
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton CargarArchivo;
+    private javax.swing.JButton GuardarConfiguracion;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTable tblComputadores;
+    private javax.swing.JTextField txtDuracionCiclo;
+    private javax.swing.JTextField txtLatenciaRed;
+    private javax.swing.JTextField txtNumComp;
     // End of variables declaration//GEN-END:variables
 }
+
