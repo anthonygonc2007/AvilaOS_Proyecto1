@@ -57,6 +57,22 @@ public class PoliticaRoundRobin implements Planificador {
 
     @Override
     public void verificarDeadlines(Cola<Pcb> colaListos) {
-        // Verificar deadlines en 0 dentro de la cola de listos
+        if (colaListos == null || colaListos.esVacia()) return;
+
+        Cola<Pcb> colaAuxiliar = new Cola<>();
+        while (!colaListos.esVacia()) {
+            Pcb proceso = colaListos.desencolar();
+            if (proceso != null) {
+                proceso.decrementarDeadline();
+                if (proceso.getDeadline() <= 0) {
+                    proceso.setEstado(EstadoProceso.EXIT);
+                } else {
+                    colaAuxiliar.encolar(proceso);
+                }
+            }
+        }
+        while (!colaAuxiliar.esVacia()) {
+            colaListos.encolar(colaAuxiliar.desencolar());
+        }
     }
 }
