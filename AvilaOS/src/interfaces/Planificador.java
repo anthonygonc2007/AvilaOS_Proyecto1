@@ -25,7 +25,4 @@ public interface Planificador {
      * @param colaListos La cola de procesos listos a verificar.
      */
     void verificarDeadlines(Cola<Pcb> colaListos);
-    
-    
-    Pcb seleccionarSiguienteProceso(Cola<Pcb> colaListos);
 }
