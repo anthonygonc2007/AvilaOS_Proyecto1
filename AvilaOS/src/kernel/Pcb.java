@@ -7,6 +7,7 @@ package kernel;
 import enums.EstadoProceso;
 import enums.ProcesoTipo;
 import java.util.UUID;
+
 /**
  *
  * @author Gemelos
@@ -29,6 +30,9 @@ public class Pcb {
     private int elementosRequeridos;
     private int elementosProcesados;
     private String motivoBloqueo;
+    
+    // Contador de tiempo invertido en Modo Sistema Operativo
+    private int tiempoModoSO;
 
     public Pcb(String nombre, String computadorId, ProcesoTipo tipo, int prioridad, 
                int memoriaAsignada, long deadline, int tiempoRestanteEjecucion) {
@@ -45,6 +49,7 @@ public class Pcb {
         this.memoryAddressRegister = 0;
         this.elementosProcesados = 0;
         this.motivoBloqueo = "";
+        this.tiempoModoSO = 0; // Inicializamos la contabilidad en 0
     }
 
     public void incrementarPC() {
@@ -63,6 +68,13 @@ public class Pcb {
             deadline--;
         }
     }
+    
+    // Método agregado para registrar la contabilidad de tiempo en kernel
+    public void incrementarTiempoModoSO(int costo) {
+        this.tiempoModoSO += costo;
+    }
+    
+    public int getTiempoModoSO() { return tiempoModoSO; }
 
     public String getId() { return id; }
     public String getNombre() { return nombre; }
