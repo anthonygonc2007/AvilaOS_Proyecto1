@@ -39,27 +39,20 @@ public class BufferAcotado {
      * Intenta producir un elemento utilizando los atributos del Pcb.
      */
     public boolean producir(Pcb proceso, Object item) {
-        // 1. semWait(espaciosVacios)
         if (!espaciosVacios.semWait(proceso, "Buffer lleno (Esperando espacio en semáforo)")) {
             return false; // El proceso se bloqueó
         }
-
-        // 2. semWait(mutex)
         if (!mutex.semWait(proceso, "Región crítica ocupada (Mutex)")) {
-            // Si se bloquea en el mutex, devolvemos el espacio vacío reservado para evitar inconsistencias
             espaciosVacios.semSignal();
             return false;
         }
 
-        // --- SECCIÓN CRÍTICA ---
+        //SECCIÓN CRÍTICA
         buffer[cola] = item;
         cola = (cola + 1) % capacidad;
         elementosActuales++;
         
-        // Actualizamos los campos específicos de tu PCB
         proceso.setElementosProcesados(proceso.getElementosProcesados() + 1);
-
-        // 3. Salida de sección crítica: semSignal(mutex) y semSignal(elementosLlenos)
         mutex.semSignal();
         elementosLlenos.semSignal();
 
@@ -70,27 +63,23 @@ public class BufferAcotado {
      * Intenta consumir un elemento utilizando los atributos del Pcb.
      */
     public Object consumir(Pcb proceso) {
-        // 1. semWait(elementosLlenos)
         if (!elementosLlenos.semWait(proceso, "Buffer vacío (Esperando elementos en semáforo)")) {
             return null; // El proceso se bloqueó
         }
-
-        // 2. semWait(mutex)
+        
         if (!mutex.semWait(proceso, "Región crítica ocupada (Mutex)")) {
             elementosLlenos.semSignal();
             return null;
         }
 
-        // --- SECCIÓN CRÍTICA ---
+        //SECCIÓN CRÍTICA
         Object item = buffer[cabeza];
         buffer[cabeza] = null;
         cabeza = (cabeza + 1) % capacidad;
         elementosActuales--;
-
-        // Actualizamos los campos específicos de tu PCB
         proceso.setElementosProcesados(proceso.getElementosProcesados() + 1);
 
-        // 3. Salida de sección crítica: semSignal(mutex) y semSignal(espaciosVacios)
+        //Salida de sección crítica
         mutex.semSignal();
         espaciosVacios.semSignal();
 
