@@ -19,7 +19,7 @@ private int valor;
         this.finCola = null;
     }
 
-    public synchronized boolean semWait(Pcb proceso) {
+    public synchronized boolean semWait(Pcb proceso, String motivo) {
         valor--;
         if (valor < 0) {
             // El recurso no está disponible; bloqueamos el proceso
