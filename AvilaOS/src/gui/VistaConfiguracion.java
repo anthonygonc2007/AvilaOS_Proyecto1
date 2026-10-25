@@ -54,6 +54,7 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         getContentPane().add(CargarArchivo, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 50, 151, -1));
 
         GuardarConfiguracion.setText("Guardar Configuración");
+        GuardarConfiguracion.addActionListener(this::GuardarConfiguracionActionPerformed);
         getContentPane().add(GuardarConfiguracion, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 20, -1, -1));
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
@@ -151,12 +152,16 @@ public class VistaConfiguracion extends javax.swing.JFrame {
     }// </editor-fold>//GEN-END:initComponents
 
     private void CargarArchivoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CargarArchivoActionPerformed
-    btnCargarArchivo(evt);// TODO add your handling code here:
+        btnCargarArchivo(evt);// TODO add your handling code here:
     }//GEN-LAST:event_CargarArchivoActionPerformed
 
     private void tblComputadoresKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_tblComputadoresKeyReleased
-    actualizarTablaComputadores();        // TODO add your handling code here:
+        actualizarTablaComputadores();        // TODO add your handling code here:
     }//GEN-LAST:event_tblComputadoresKeyReleased
+
+    private void GuardarConfiguracionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GuardarConfiguracionActionPerformed
+        btnGuardarConfiguracion(evt);    // TODO add your handling code here:
+    }//GEN-LAST:event_GuardarConfiguracionActionPerformed
 
     /**
      * @param args the command line arguments
@@ -259,6 +264,104 @@ public class VistaConfiguracion extends javax.swing.JFrame {
                 "Error de Lectura", 
                 javax.swing.JOptionPane.ERROR_MESSAGE);
         }
+    }
+}
+    
+    /**
+     * Extrae la información en los campos de texto y tablas y las almacena como
+     * un objeto ConfiguracionSimulacion para luego guardarla
+     * @return
+     * @throws NumberFormatException 
+     */
+    private ConfiguracionSimulacion obtenerConfiguracion() throws NumberFormatException {
+    ConfiguracionSimulacion config = new ConfiguracionSimulacion();
+
+    // Extraer Parámetros
+    config.duracionCicloMs = Integer.parseInt(txtDuracionCiclo.getText().trim());
+    config.latenciaRedCiclos = Integer.parseInt(txtLatenciaRed.getText().trim());
+    config.numComputadores = Integer.parseInt(txtNumComp.getText().trim());
+
+    // Extraer Computadores
+    javax.swing.table.DefaultTableModel modelComp = (javax.swing.table.DefaultTableModel) tblComputadores.getModel();
+    int filasComp = modelComp.getRowCount();
+    config.computadores = new ConfiguracionSimulacion.ConfigComputador[filasComp];
+    for (int i = 0; i < filasComp; i++) {
+        ConfiguracionSimulacion.ConfigComputador c = new ConfiguracionSimulacion.ConfigComputador();
+        c.id = modelComp.getValueAt(i, 0).toString();
+        c.ramTotal = Integer.parseInt(modelComp.getValueAt(i, 1).toString());
+        c.politicaInicial = modelComp.getValueAt(i, 2).toString();
+        c.quantum = Integer.parseInt(modelComp.getValueAt(i, 3).toString());
+        config.computadores[i] = c;
+    }
+
+    // Extraer Buffers
+    javax.swing.table.DefaultTableModel modelBuf = (javax.swing.table.DefaultTableModel) tblBuffers.getModel();
+    int filasBuf = modelBuf.getRowCount();
+    config.buffers = new ConfiguracionSimulacion.ConfigBuffer[filasBuf];
+    for (int i = 0; i < filasBuf; i++) {
+        ConfiguracionSimulacion.ConfigBuffer b = new ConfiguracionSimulacion.ConfigBuffer();
+        b.id = modelBuf.getValueAt(i, 0).toString();
+        b.capacidad = Integer.parseInt(modelBuf.getValueAt(i, 1).toString());
+        b.computadorAnfitrionId = modelBuf.getValueAt(i, 2).toString();
+        config.buffers[i] = b;
+    }
+
+    // Extraer Procesos
+    javax.swing.table.DefaultTableModel modelProc = (javax.swing.table.DefaultTableModel) tblProcesos.getModel();
+    int filasProc = modelProc.getRowCount();
+    config.procesos = new ConfiguracionSimulacion.ConfigProceso[filasProc];
+    for (int i = 0; i < filasProc; i++) {
+        ConfiguracionSimulacion.ConfigProceso p = new ConfiguracionSimulacion.ConfigProceso();
+        p.id = modelProc.getValueAt(i, 0).toString();
+        p.nombre = modelProc.getValueAt(i, 1).toString();
+        p.computadorId = modelProc.getValueAt(i, 2).toString();
+        p.tipo = modelProc.getValueAt(i, 3).toString();
+        p.prioridad = Integer.parseInt(modelProc.getValueAt(i, 4).toString());
+        p.memoriaAsignada = Integer.parseInt(modelProc.getValueAt(i, 5).toString());
+        p.deadline = Long.parseLong(modelProc.getValueAt(i, 6).toString());
+        p.tiempoRestanteEjecucion = Integer.parseInt(modelProc.getValueAt(i, 7).toString());
+        p.bufferAsociadoId = modelProc.getValueAt(i, 8).toString();
+        p.ciclosProducirConsumir = Integer.parseInt(modelProc.getValueAt(i, 9).toString());
+        p.elementosRequeridos = Integer.parseInt(modelProc.getValueAt(i, 10).toString());
+        config.procesos[i] = p;
+    }
+    return config;
+}
+    
+    /**
+     * Guarda un Archivo JSON con los parámetros recolectados por obtenerConfiguracion
+     * @param evt 
+     */
+    private void btnGuardarConfiguracion(java.awt.event.ActionEvent evt) {
+    try {
+        ConfiguracionSimulacion config = obtenerConfiguracion();
+        javax.swing.JFileChooser seleccionador = new javax.swing.JFileChooser();
+        seleccionador.setDialogTitle("Guardar Configuración de ÁvilaOS (.json)");
+        seleccionador.setSelectedFile(new java.io.File("configuracion_avilaos.json"));
+        int resultado = seleccionador.showSaveDialog(this);
+        if (resultado == javax.swing.JFileChooser.APPROVE_OPTION) {
+            java.io.File archivo = seleccionador.getSelectedFile();
+            String ruta = archivo.getAbsolutePath();
+            if (!ruta.toLowerCase().endsWith(".json")) {
+                ruta += ".json";
+            }
+            GestorJSON gestor = new GestorJSON();
+            gestor.guardarConfiguracion(config, ruta);
+            javax.swing.JOptionPane.showMessageDialog(this,
+                "¡Configuración guardada exitosamente en:\n" + ruta,
+                "Éxito",
+                javax.swing.JOptionPane.INFORMATION_MESSAGE);
+        }
+    } catch (NumberFormatException e) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Error en los datos ingresados: Por favor verifica que los campos numéricos contengan valores válidos.",
+            "Error de Validación",
+            javax.swing.JOptionPane.WARNING_MESSAGE);
+    } catch (Exception e) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Error al guardar el archivo JSON: " + e.getMessage(),
+            "Error al Guardar",
+            javax.swing.JOptionPane.ERROR_MESSAGE);
     }
 }
     
