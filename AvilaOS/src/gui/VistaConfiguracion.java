@@ -41,6 +41,10 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         txtLatenciaRed = new javax.swing.JTextField();
         jScrollPane1 = new javax.swing.JScrollPane();
         tblComputadores = new javax.swing.JTable();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        tblBuffers = new javax.swing.JTable();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        tblProcesos = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -93,7 +97,55 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(tblComputadores);
 
-        getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(350, 20, -1, 200));
+        getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(210, 260, 620, 170));
+
+        tblBuffers.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null},
+                {null, null, null},
+                {null, null, null},
+                {null, null, null}
+            },
+            new String [] {
+                "ID Buffer", "Capacidad", "Anfitrión"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.String.class, java.lang.Integer.class, java.lang.String.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+        });
+        jScrollPane2.setViewportView(tblBuffers);
+
+        getContentPane().add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 30, 620, 170));
+
+        tblProcesos.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null},
+                {null, null, null, null, null, null, null, null, null, null, null}
+            },
+            new String [] {
+                "ID", "Nombre", "Comp. Asignado", "Tipo", "Prioridad", "Memoria (MB)", "Deadline", "Instrucciones/Restante", "Buffer Asociado", "Frecuencia Ciclos", "Total Elementos"
+            }
+        ) {
+            Class[] types = new Class [] {
+                java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class, java.lang.Long.class, java.lang.Integer.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+            };
+
+            public Class getColumnClass(int columnIndex) {
+                return types [columnIndex];
+            }
+        });
+        tblProcesos.setAutoscrolls(false);
+        tblProcesos.setShowGrid(false);
+        jScrollPane3.setViewportView(tblProcesos);
+
+        getContentPane().add(jScrollPane3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 490, 1000, 170));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
@@ -164,6 +216,38 @@ public class VistaConfiguracion extends javax.swing.JFrame {
                 }
             }
             
+            javax.swing.table.DefaultTableModel modeloBuffer = (javax.swing.table.DefaultTableModel) tblBuffers.getModel();
+            modeloBuffer.setRowCount(0);
+            if (config.buffers != null) {
+                for (ConfiguracionSimulacion.ConfigBuffer b : config.buffers) {
+                    modeloBuffer.addRow(new Object[]{
+                        b.id,
+                        b.capacidad,
+                        b.computadorAnfitrionId
+                    });
+                }
+            }
+            
+            javax.swing.table.DefaultTableModel modelProc = (javax.swing.table.DefaultTableModel) tblProcesos.getModel();
+            modelProc.setRowCount(0);
+            if (config.procesos != null) {
+                for (ConfiguracionSimulacion.ConfigProceso p : config.procesos) {
+                    modelProc.addRow(new Object[]{
+                        p.id, 
+                        p.nombre, 
+                        p.computadorId, 
+                        p.tipo, 
+                        p.prioridad, 
+                        p.memoriaAsignada, 
+                        p.deadline, 
+                        p.tiempoRestanteEjecucion, 
+                        p.bufferAsociadoId, 
+                        p.ciclosProducirConsumir, 
+                        p.elementosRequeridos
+                    });
+                }
+            }
+            
             javax.swing.JOptionPane.showMessageDialog(this, 
                 "¡Configuración cargada correctamente!", 
                 "Éxito", 
@@ -205,7 +289,11 @@ public class VistaConfiguracion extends javax.swing.JFrame {
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JTable tblBuffers;
     private javax.swing.JTable tblComputadores;
+    private javax.swing.JTable tblProcesos;
     private javax.swing.JTextField txtDuracionCiclo;
     private javax.swing.JTextField txtLatenciaRed;
     private javax.swing.JTextField txtNumComp;
