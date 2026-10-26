@@ -6,6 +6,11 @@ package gui;
 
 import io.GestorJSON;
 import io.ConfiguracionSimulacion;
+import java.awt.Color;
+import java.awt.Font;
+import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
 
 /**
  *
@@ -15,11 +20,102 @@ public class VistaConfiguracion extends javax.swing.JFrame {
     
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(VistaConfiguracion.class.getName());
 
+    private static final Color COLOR_BG = new Color(18, 24, 38);
+    private static final Color COLOR_PANEL_BG = new Color(28, 36, 54);
+    private static final Color COLOR_CARD_BG = new Color(38, 48, 70);
+    private static final Color COLOR_TEXT_MAIN = new Color(240, 244, 250);
+    private static final Color COLOR_TEXT_MUTED = new Color(160, 175, 200);
+    private static final Color COLOR_ACCENT_BLUE = new Color(51, 153, 255);
+    private static final Color COLOR_ACCENT_GREEN = new Color(46, 204, 113);
+
     /**
      * Creates new form VistaConfiguracion
      */
     public VistaConfiguracion() {
         initComponents();
+        estiloFondo();
+        txtNumComp.setText("1");
+        inicializarTablas();
+    }
+    
+    private void estiloFondo() {
+        setTitle("ÁvilaOS - Configuración de Simulación Distribuida");
+        getContentPane().setBackground(COLOR_BG);
+
+        // 1. Estilar Etiquetas de Parámetros
+        JLabel[] etiquetas = {jLabel1, jLabel2, jLabel3};
+        for (JLabel lbl : etiquetas) {
+            lbl.setForeground(COLOR_TEXT_MAIN);
+            lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        }
+
+        // 2. Estilar Títulos de las Secciones/Tablas (Buffers, Computadores, Procesos)
+        JLabel[] titulosSecciones = {jLabel4, jLabel5, jLabel6};
+        for (JLabel lbl : titulosSecciones) {
+            lbl.setForeground(COLOR_ACCENT_BLUE); // Azul brillante
+            lbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        }
+
+        // 3. Estilar Campos de Texto
+        JTextField[] campos = {txtDuracionCiclo, txtNumComp, txtLatenciaRed};
+        for (JTextField txt : campos) {
+            txt.setBackground(new Color(15, 20, 30));
+            txt.setForeground(COLOR_TEXT_MAIN);
+            txt.setCaretColor(COLOR_ACCENT_BLUE);
+            txt.setFont(new Font("Segoe UI", Font.BOLD, 12));
+            txt.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(COLOR_CARD_BG, 1),
+                BorderFactory.createEmptyBorder(3, 6, 3, 6)
+            ));
+        }
+
+        // 4. Estilar Botones Principales y de Control
+        estiloBoton(GuardarConfiguracion, COLOR_CARD_BG);
+        estiloBoton(CargarArchivo, COLOR_CARD_BG);
+        estiloBoton(Monitoreo, COLOR_ACCENT_GREEN);
+
+        // 5. Estilar Botones de Agregar y Eliminar
+        estiloBoton(agregarBuffer, COLOR_CARD_BG);
+        estiloBoton(quitarBuffer, COLOR_CARD_BG);
+        estiloBoton(agregarProceso, COLOR_CARD_BG);
+        estiloBoton(quitarProceso, COLOR_CARD_BG);
+
+        // 6. Estilar Tablas
+        estiloTabla(tblComputadores);
+        estiloTabla(tblBuffers);
+        estiloTabla(tblProcesos);
+    }
+        
+    private void estiloBoton(JButton btn, Color colorFondo) {
+        btn.setBackground(colorFondo);
+        btn.setForeground(Color.WHITE);
+        btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        btn.setFocusPainted(false);
+        btn.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(COLOR_CARD_BG.brighter(), 1),
+                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+        ));
+    }
+
+    private void estiloTabla(JTable tabla) {
+        tabla.setBackground(new Color(22, 30, 44));
+        tabla.setForeground(COLOR_TEXT_MAIN);
+        tabla.setGridColor(COLOR_CARD_BG);
+        tabla.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        tabla.setRowHeight(24);
+        tabla.setShowGrid(true);
+        tabla.setShowHorizontalLines(true);
+        tabla.setShowVerticalLines(true);
+
+        // Header de la tabla
+        tabla.getTableHeader().setBackground(COLOR_PANEL_BG);
+        tabla.getTableHeader().setForeground(COLOR_ACCENT_BLUE);
+        tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+        tabla.getTableHeader().setBorder(BorderFactory.createLineBorder(COLOR_CARD_BG));
+
+        // Alineación y color para la celda seleccionada
+        tabla.setSelectionBackground(COLOR_CARD_BG);
+        tabla.setSelectionForeground(COLOR_TEXT_MAIN);
     }
 
     /**
@@ -46,6 +142,13 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         jScrollPane3 = new javax.swing.JScrollPane();
         tblProcesos = new javax.swing.JTable();
         Monitoreo = new javax.swing.JButton();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        agregarBuffer = new javax.swing.JButton();
+        quitarBuffer = new javax.swing.JButton();
+        agregarProceso = new javax.swing.JButton();
+        quitarProceso = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -60,18 +163,25 @@ public class VistaConfiguracion extends javax.swing.JFrame {
 
         jLabel1.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel1.setText("Duración del Ciclo:");
-        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 90, -1, -1));
+        getContentPane().add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(40, 120, -1, -1));
 
         jLabel2.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel2.setText("Número de computadores:");
-        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 120, -1, -1));
+        getContentPane().add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(20, 150, -1, -1));
 
         jLabel3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel3.setText("Latencia en red (ciclos):");
-        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 160, -1, -1));
-        getContentPane().add(txtDuracionCiclo, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 80, 130, -1));
-        getContentPane().add(txtNumComp, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 120, 126, -1));
-        getContentPane().add(txtLatenciaRed, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 160, 130, -1));
+        getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 190, -1, -1));
+        getContentPane().add(txtDuracionCiclo, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 110, 130, -1));
+
+        txtNumComp.addActionListener(this::txtNumCompActionPerformed);
+        txtNumComp.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtNumCompKeyReleased(evt);
+            }
+        });
+        getContentPane().add(txtNumComp, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 150, 126, -1));
+        getContentPane().add(txtLatenciaRed, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 190, 130, -1));
 
         tblComputadores.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -92,6 +202,7 @@ public class VistaConfiguracion extends javax.swing.JFrame {
                 return types [columnIndex];
             }
         });
+        tblComputadores.setShowGrid(true);
         tblComputadores.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 tblComputadoresKeyReleased(evt);
@@ -99,7 +210,7 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(tblComputadores);
 
-        getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 240, 620, 170));
+        getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 240, 620, 110));
 
         tblBuffers.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -120,9 +231,10 @@ public class VistaConfiguracion extends javax.swing.JFrame {
                 return types [columnIndex];
             }
         });
+        tblBuffers.setShowGrid(true);
         jScrollPane2.setViewportView(tblBuffers);
 
-        getContentPane().add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(360, 30, 620, 170));
+        getContentPane().add(jScrollPane2, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 40, 620, 110));
 
         tblProcesos.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -143,34 +255,85 @@ public class VistaConfiguracion extends javax.swing.JFrame {
                 return types [columnIndex];
             }
         });
-        tblProcesos.setAutoscrolls(false);
-        tblProcesos.setShowGrid(false);
+        tblProcesos.setShowGrid(true);
         jScrollPane3.setViewportView(tblProcesos);
 
-        getContentPane().add(jScrollPane3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 490, 1000, 170));
+        getContentPane().add(jScrollPane3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 420, 1000, 110));
 
         Monitoreo.setText("Iniciar");
         Monitoreo.addActionListener(this::MonitoreoActionPerformed);
-        getContentPane().add(Monitoreo, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 230, 240, 30));
+        getContentPane().add(Monitoreo, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 250, 240, 30));
+
+        jLabel4.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel4.setText("Buffers");
+        getContentPane().add(jLabel4, new org.netbeans.lib.awtextra.AbsoluteConstraints(620, 20, 110, -1));
+
+        jLabel5.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel5.setText("Computadores");
+        getContentPane().add(jLabel5, new org.netbeans.lib.awtextra.AbsoluteConstraints(640, 220, -1, -1));
+
+        jLabel6.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabel6.setText("Procesos");
+        getContentPane().add(jLabel6, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 400, -1, -1));
+
+        agregarBuffer.setText("Agregar Buffer");
+        agregarBuffer.addActionListener(this::agregarBufferActionPerformed);
+        getContentPane().add(agregarBuffer, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 170, 150, -1));
+
+        quitarBuffer.setText("Eliminar Buffer");
+        quitarBuffer.addActionListener(this::quitarBufferActionPerformed);
+        getContentPane().add(quitarBuffer, new org.netbeans.lib.awtextra.AbsoluteConstraints(660, 170, 150, -1));
+
+        agregarProceso.setText("Agregar Proceso");
+        agregarProceso.addActionListener(this::agregarProcesoActionPerformed);
+        getContentPane().add(agregarProceso, new org.netbeans.lib.awtextra.AbsoluteConstraints(300, 550, 150, -1));
+
+        quitarProceso.setText("Eliminar Proceso");
+        quitarProceso.addActionListener(this::quitarProcesoActionPerformed);
+        getContentPane().add(quitarProceso, new org.netbeans.lib.awtextra.AbsoluteConstraints(570, 550, 150, -1));
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void CargarArchivoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_CargarArchivoActionPerformed
-        btnCargarArchivo(evt);// TODO add your handling code here:
+        btnCargarArchivo(evt);
     }//GEN-LAST:event_CargarArchivoActionPerformed
 
     private void tblComputadoresKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_tblComputadoresKeyReleased
-        actualizarTablaComputadores();        // TODO add your handling code here:
+        actualizarTablaComputadores();
     }//GEN-LAST:event_tblComputadoresKeyReleased
 
     private void GuardarConfiguracionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GuardarConfiguracionActionPerformed
-        btnGuardarConfiguracion(evt);    // TODO add your handling code here:
+        btnGuardarConfiguracion(evt);
     }//GEN-LAST:event_GuardarConfiguracionActionPerformed
 
     private void MonitoreoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MonitoreoActionPerformed
-        btnMonitoreo(evt);        // TODO add your handling code here:
+        btnMonitoreo(evt);
     }//GEN-LAST:event_MonitoreoActionPerformed
+
+    private void txtNumCompActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtNumCompActionPerformed
+        actualizarTablaComputadores();
+    }//GEN-LAST:event_txtNumCompActionPerformed
+
+    private void txtNumCompKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtNumCompKeyReleased
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtNumCompKeyReleased
+
+    private void agregarBufferActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_agregarBufferActionPerformed
+        btnAgregarBuffer(evt);
+    }//GEN-LAST:event_agregarBufferActionPerformed
+
+    private void quitarBufferActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_quitarBufferActionPerformed
+        btnQuitarBuffer(evt);
+    }//GEN-LAST:event_quitarBufferActionPerformed
+
+    private void agregarProcesoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_agregarProcesoActionPerformed
+        btnAgregarProceso(evt);
+    }//GEN-LAST:event_agregarProcesoActionPerformed
+
+    private void quitarProcesoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_quitarProcesoActionPerformed
+        btnQuitarProceso(evt);
+    }//GEN-LAST:event_quitarProcesoActionPerformed
 
     /**
      * @param args the command line arguments
@@ -391,21 +554,32 @@ public class VistaConfiguracion extends javax.swing.JFrame {
      * Actualiza las filas de la tabla de computadores para que coincidan con el numero declarado en la caja de texto
      */
     private void actualizarTablaComputadores() {
+    String texto = txtNumComp.getText().trim();
+    if (texto.isEmpty()) {
+        return;
+    }
+    
     try {
-        int cantidad = Integer.parseInt(txtNumComp.getText().trim());
+        int cantidad = Integer.parseInt(texto);
         if (cantidad <= 0) return;
 
         javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblComputadores.getModel();
-        modelo.setRowCount(0); // Limpiar filas anteriores
+        int filasActuales = modelo.getRowCount();
 
-        for (int i = 1; i <= cantidad; i++) {
-            // Fila por defecto
-            modelo.addRow(new Object[]{i, 1024, "FCFS", 0});
+        // Ajustar el número de filas conservando o agregando
+        if (cantidad > filasActuales) {
+            for (int i = filasActuales + 1; i <= cantidad; i++) {
+                modelo.addRow(new Object[]{i, 1024, "FCFS", 0});
+            }
+        } else if (cantidad < filasActuales) {
+            for (int i = filasActuales - 1; i >= cantidad; i--) {
+                modelo.removeRow(i);
+            }
         }
     } catch (NumberFormatException e) {
-        
+        // Se ignora mientras el usuario está escribiendo un valor no entero
     }
-    }
+}
     
     private void btnMonitoreo(java.awt.event.ActionEvent evt) {
     try {
@@ -425,19 +599,103 @@ public class VistaConfiguracion extends javax.swing.JFrame {
             "Error",
             javax.swing.JOptionPane.ERROR_MESSAGE);
     }
+    }
+    
+    private void inicializarTablas() {
+        // Inicializar Buffers con 1 fila
+        javax.swing.table.DefaultTableModel modelBuf = (javax.swing.table.DefaultTableModel) tblBuffers.getModel();
+        modelBuf.setRowCount(0);
+        modelBuf.addRow(new Object[]{"B1", 5, "1"});
 
-}
+        // Inicializar Procesos con 1 fila
+        javax.swing.table.DefaultTableModel modelProc = (javax.swing.table.DefaultTableModel) tblProcesos.getModel();
+        modelProc.setRowCount(0);
+        modelProc.addRow(new Object[]{"P1", "Proceso_1", "1", "CPU_BOUND", 1, 128, 50, 10, "", 0, 0});
+        
+        // Inicializar Computadores con 1 fila
+        javax.swing.table.DefaultTableModel modelComp = (javax.swing.table.DefaultTableModel) tblComputadores.getModel();
+        modelComp.setRowCount(0);
+        modelComp.addRow(new Object[]{1, 1024, "FCFS", 0});
+    }
+
+    private void btnAgregarBuffer(java.awt.event.ActionEvent evt) {
+        javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblBuffers.getModel();
+        int siguienteNum = modelo.getRowCount() + 1;
+        // Agrega una nueva fila predeterminada
+        modelo.addRow(new Object[]{"B" + siguienteNum, 5, "1"});
+    }
+
+    private void btnQuitarBuffer(java.awt.event.ActionEvent evt) {
+        javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblBuffers.getModel();
+        int filaSeleccionada = tblBuffers.getSelectedRow();
+        if (modelo.getRowCount() <= 1) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Debe existir al menos un buffer configurado.", 
+                "Advertencia", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        if (filaSeleccionada != -1) {
+            modelo.removeRow(filaSeleccionada);
+        } else {
+            // Si no hay fila seleccionada, remueve la última
+            modelo.removeRow(modelo.getRowCount() - 1);
+        }
+    }
+
+    private void btnAgregarProceso(java.awt.event.ActionEvent evt) {
+        javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblProcesos.getModel();
+        int siguienteNum = modelo.getRowCount() + 1;
+        modelo.addRow(new Object[]{
+            "P" + siguienteNum, 
+            "Proceso_" + siguienteNum, 
+            "1", 
+            "CPU_BOUND", 
+            1, 
+            128, 
+            50, 
+            10, 
+            "", 
+            0, 
+            0
+        });
+    }
+
+    private void btnQuitarProceso(java.awt.event.ActionEvent evt) {
+        javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblProcesos.getModel();
+        int filaSeleccionada = tblProcesos.getSelectedRow();
+
+        if (modelo.getRowCount() <= 1) {
+            javax.swing.JOptionPane.showMessageDialog(this, 
+                "Debe existir al menos un proceso configurado en el sistema.", 
+                "Advertencia", javax.swing.JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        if (filaSeleccionada != -1) {
+            modelo.removeRow(filaSeleccionada);
+        } else {
+            // Si no hay fila seleccionada, remueve la última
+            modelo.removeRow(modelo.getRowCount() - 1);
+        }
+    }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton CargarArchivo;
     private javax.swing.JButton GuardarConfiguracion;
     private javax.swing.JButton Monitoreo;
+    private javax.swing.JButton agregarBuffer;
+    private javax.swing.JButton agregarProceso;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JButton quitarBuffer;
+    private javax.swing.JButton quitarProceso;
     private javax.swing.JTable tblBuffers;
     private javax.swing.JTable tblComputadores;
     private javax.swing.JTable tblProcesos;
