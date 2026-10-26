@@ -45,6 +45,7 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         tblBuffers = new javax.swing.JTable();
         jScrollPane3 = new javax.swing.JScrollPane();
         tblProcesos = new javax.swing.JTable();
+        Monitoreo = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
         getContentPane().setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
@@ -68,7 +69,7 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         jLabel3.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
         jLabel3.setText("Latencia en red (ciclos):");
         getContentPane().add(jLabel3, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 160, -1, -1));
-        getContentPane().add(txtDuracionCiclo, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 80, 122, -1));
+        getContentPane().add(txtDuracionCiclo, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 80, 130, -1));
         getContentPane().add(txtNumComp, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 120, 126, -1));
         getContentPane().add(txtLatenciaRed, new org.netbeans.lib.awtextra.AbsoluteConstraints(180, 160, 130, -1));
 
@@ -98,7 +99,7 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         });
         jScrollPane1.setViewportView(tblComputadores);
 
-        getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(210, 260, 620, 170));
+        getContentPane().add(jScrollPane1, new org.netbeans.lib.awtextra.AbsoluteConstraints(370, 240, 620, 170));
 
         tblBuffers.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
@@ -148,6 +149,10 @@ public class VistaConfiguracion extends javax.swing.JFrame {
 
         getContentPane().add(jScrollPane3, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 490, 1000, 170));
 
+        Monitoreo.setText("Iniciar");
+        Monitoreo.addActionListener(this::MonitoreoActionPerformed);
+        getContentPane().add(Monitoreo, new org.netbeans.lib.awtextra.AbsoluteConstraints(30, 230, 240, 30));
+
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
@@ -162,6 +167,10 @@ public class VistaConfiguracion extends javax.swing.JFrame {
     private void GuardarConfiguracionActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_GuardarConfiguracionActionPerformed
         btnGuardarConfiguracion(evt);    // TODO add your handling code here:
     }//GEN-LAST:event_GuardarConfiguracionActionPerformed
+
+    private void MonitoreoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_MonitoreoActionPerformed
+        btnMonitoreo(evt);        // TODO add your handling code here:
+    }//GEN-LAST:event_MonitoreoActionPerformed
 
     /**
      * @param args the command line arguments
@@ -208,6 +217,7 @@ public class VistaConfiguracion extends javax.swing.JFrame {
             txtLatenciaRed.setText(String.valueOf(config.latenciaRedCiclos));
             txtNumComp.setText(String.valueOf(config.numComputadores));
             
+            // Computadores
             javax.swing.table.DefaultTableModel modelo = (javax.swing.table.DefaultTableModel) tblComputadores.getModel();
             modelo.setRowCount(0);
             if (config.computadores != null) {
@@ -221,6 +231,7 @@ public class VistaConfiguracion extends javax.swing.JFrame {
                 }
             }
             
+            // Buffers
             javax.swing.table.DefaultTableModel modeloBuffer = (javax.swing.table.DefaultTableModel) tblBuffers.getModel();
             modeloBuffer.setRowCount(0);
             if (config.buffers != null) {
@@ -233,6 +244,7 @@ public class VistaConfiguracion extends javax.swing.JFrame {
                 }
             }
             
+            // Procesos (Mapeo exacto 1:1 con las columnas de tblProcesos)
             javax.swing.table.DefaultTableModel modelProc = (javax.swing.table.DefaultTableModel) tblProcesos.getModel();
             modelProc.setRowCount(0);
             if (config.procesos != null) {
@@ -274,57 +286,67 @@ public class VistaConfiguracion extends javax.swing.JFrame {
      * @throws NumberFormatException 
      */
     private ConfiguracionSimulacion obtenerConfiguracion() throws NumberFormatException {
+    // Detener edición activa para confirmar celdas modificadas
+    if (tblComputadores.isEditing()) tblComputadores.getCellEditor().stopCellEditing();
+    if (tblBuffers.isEditing()) tblBuffers.getCellEditor().stopCellEditing();
+    if (tblProcesos.isEditing()) tblProcesos.getCellEditor().stopCellEditing();
+
     ConfiguracionSimulacion config = new ConfiguracionSimulacion();
 
-    // Extraer Parámetros
+    // 1. Parámetros
     config.duracionCicloMs = Integer.parseInt(txtDuracionCiclo.getText().trim());
     config.latenciaRedCiclos = Integer.parseInt(txtLatenciaRed.getText().trim());
     config.numComputadores = Integer.parseInt(txtNumComp.getText().trim());
 
-    // Extraer Computadores
+    // 2. Computadores
     javax.swing.table.DefaultTableModel modelComp = (javax.swing.table.DefaultTableModel) tblComputadores.getModel();
     int filasComp = modelComp.getRowCount();
     config.computadores = new ConfiguracionSimulacion.ConfigComputador[filasComp];
     for (int i = 0; i < filasComp; i++) {
         ConfiguracionSimulacion.ConfigComputador c = new ConfiguracionSimulacion.ConfigComputador();
-        c.id = modelComp.getValueAt(i, 0).toString();
-        c.ramTotal = Integer.parseInt(modelComp.getValueAt(i, 1).toString());
-        c.politicaInicial = modelComp.getValueAt(i, 2).toString();
-        c.quantum = Integer.parseInt(modelComp.getValueAt(i, 3).toString());
+        c.id = modelComp.getValueAt(i, 0).toString().trim();
+        c.ramTotal = Integer.parseInt(modelComp.getValueAt(i, 1).toString().trim());
+        c.politicaInicial = modelComp.getValueAt(i, 2).toString().trim();
+        c.quantum = Integer.parseInt(modelComp.getValueAt(i, 3).toString().trim());
         config.computadores[i] = c;
     }
 
-    // Extraer Buffers
+    // 3. Buffers
     javax.swing.table.DefaultTableModel modelBuf = (javax.swing.table.DefaultTableModel) tblBuffers.getModel();
     int filasBuf = modelBuf.getRowCount();
     config.buffers = new ConfiguracionSimulacion.ConfigBuffer[filasBuf];
     for (int i = 0; i < filasBuf; i++) {
         ConfiguracionSimulacion.ConfigBuffer b = new ConfiguracionSimulacion.ConfigBuffer();
-        b.id = modelBuf.getValueAt(i, 0).toString();
-        b.capacidad = Integer.parseInt(modelBuf.getValueAt(i, 1).toString());
-        b.computadorAnfitrionId = modelBuf.getValueAt(i, 2).toString();
+        b.id = modelBuf.getValueAt(i, 0).toString().trim();
+        b.capacidad = Integer.parseInt(modelBuf.getValueAt(i, 1).toString().trim());
+        b.computadorAnfitrionId = modelBuf.getValueAt(i, 2).toString().trim();
         config.buffers[i] = b;
     }
 
-    // Extraer Procesos
+    // 4. Procesos
     javax.swing.table.DefaultTableModel modelProc = (javax.swing.table.DefaultTableModel) tblProcesos.getModel();
     int filasProc = modelProc.getRowCount();
     config.procesos = new ConfiguracionSimulacion.ConfigProceso[filasProc];
     for (int i = 0; i < filasProc; i++) {
         ConfiguracionSimulacion.ConfigProceso p = new ConfiguracionSimulacion.ConfigProceso();
-        p.id = modelProc.getValueAt(i, 0).toString();
-        p.nombre = modelProc.getValueAt(i, 1).toString();
-        p.computadorId = modelProc.getValueAt(i, 2).toString();
-        p.tipo = modelProc.getValueAt(i, 3).toString();
-        p.prioridad = Integer.parseInt(modelProc.getValueAt(i, 4).toString());
-        p.memoriaAsignada = Integer.parseInt(modelProc.getValueAt(i, 5).toString());
-        p.deadline = Long.parseLong(modelProc.getValueAt(i, 6).toString());
-        p.tiempoRestanteEjecucion = Integer.parseInt(modelProc.getValueAt(i, 7).toString());
-        p.bufferAsociadoId = modelProc.getValueAt(i, 8).toString();
-        p.ciclosProducirConsumir = Integer.parseInt(modelProc.getValueAt(i, 9).toString());
-        p.elementosRequeridos = Integer.parseInt(modelProc.getValueAt(i, 10).toString());
+        p.id = modelProc.getValueAt(i, 0).toString().trim();
+        p.nombre = modelProc.getValueAt(i, 1).toString().trim();
+        p.computadorId = modelProc.getValueAt(i, 2).toString().trim();
+        p.tipo = modelProc.getValueAt(i, 3).toString().trim();
+        p.prioridad = Integer.parseInt(modelProc.getValueAt(i, 4).toString().trim());
+        p.memoriaAsignada = Integer.parseInt(modelProc.getValueAt(i, 5).toString().trim());
+        p.deadline = Long.parseLong(modelProc.getValueAt(i, 6).toString().trim());
+        p.tiempoRestanteEjecucion = Integer.parseInt(modelProc.getValueAt(i, 7).toString().trim());
+        
+        Object bufAsoc = modelProc.getValueAt(i, 8);
+        p.bufferAsociadoId = (bufAsoc != null) ? bufAsoc.toString().trim() : "";
+        
+        p.ciclosProducirConsumir = Integer.parseInt(modelProc.getValueAt(i, 9).toString().trim());
+        p.elementosRequeridos = Integer.parseInt(modelProc.getValueAt(i, 10).toString().trim());
+
         config.procesos[i] = p;
     }
+
     return config;
 }
     
@@ -383,11 +405,33 @@ public class VistaConfiguracion extends javax.swing.JFrame {
     } catch (NumberFormatException e) {
         
     }
+    }
+    
+    private void btnMonitoreo(java.awt.event.ActionEvent evt) {
+    try {
+        io.ConfiguracionSimulacion config = obtenerConfiguracion();
+        gui.VistaMonitoreo vistaSimulacion = new gui.VistaMonitoreo(config);
+        vistaSimulacion.setVisible(true);
+        // this.dispose(); 
+
+    } catch (NumberFormatException e) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Error en los datos ingresados: Revisa los campos de las tablas.",
+            "Error de Validación",
+            javax.swing.JOptionPane.WARNING_MESSAGE);
+    } catch (Exception e) {
+        javax.swing.JOptionPane.showMessageDialog(this,
+            "Error al iniciar la simulación: " + e.getMessage(),
+            "Error",
+            javax.swing.JOptionPane.ERROR_MESSAGE);
+    }
+
 }
     
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton CargarArchivo;
     private javax.swing.JButton GuardarConfiguracion;
+    private javax.swing.JButton Monitoreo;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;

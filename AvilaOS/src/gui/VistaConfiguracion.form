@@ -87,7 +87,7 @@
     <Component class="javax.swing.JTextField" name="txtDuracionCiclo">
       <Constraints>
         <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
-          <AbsoluteConstraints x="180" y="80" width="122" height="-1"/>
+          <AbsoluteConstraints x="180" y="80" width="130" height="-1"/>
         </Constraint>
       </Constraints>
     </Component>
@@ -111,7 +111,7 @@
       </AuxValues>
       <Constraints>
         <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
-          <AbsoluteConstraints x="210" y="260" width="620" height="170"/>
+          <AbsoluteConstraints x="370" y="240" width="620" height="170"/>
         </Constraint>
       </Constraints>
 
@@ -209,11 +209,6 @@
       </SubComponents>
     </Container>
     <Container class="javax.swing.JScrollPane" name="jScrollPane3">
-      <Properties>
-        <Property name="rowHeaderView" type="java.awt.Component" editor="org.netbeans.modules.form.ComponentChooserEditor">
-          <ComponentRef name="default"/>
-        </Property>
-      </Properties>
       <AuxValues>
         <AuxValue name="autoScrollPane" type="java.lang.Boolean" value="true"/>
       </AuxValues>
@@ -310,5 +305,18 @@
         </Component>
       </SubComponents>
     </Container>
+    <Component class="javax.swing.JButton" name="Monitoreo">
+      <Properties>
+        <Property name="text" type="java.lang.String" value="Iniciar"/>
+      </Properties>
+      <Events>
+        <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="MonitoreoActionPerformed"/>
+      </Events>
+      <Constraints>
+        <Constraint layoutClass="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout" value="org.netbeans.modules.form.compat2.layouts.DesignAbsoluteLayout$AbsoluteConstraintsDescription">
+          <AbsoluteConstraints x="30" y="230" width="240" height="30"/>
+        </Constraint>
+      </Constraints>
+    </Component>
   </SubComponents>
 </Form>
