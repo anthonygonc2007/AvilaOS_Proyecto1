@@ -8,7 +8,7 @@ import enums.EstadoProceso;
 import enums.PoliticaPlanificacion;
 import estructuras.Cola;
 import interfaces.Planificador;
-
+import metricas.GestorMetricas;
 /**
  * Representa un nodo del clúster (Computador) en ÁvilaOS.
  * Integra la CPU, Memoria RAM y las colas del sistema operativo.
@@ -30,10 +30,12 @@ public class Computador {
     private PoliticaPlanificacion politicaActual;
     private Planificador planificador;
     private int quantum;
+    private final GestorMetricas gestorMetricas;
 
-    public Computador(String id, int capacidadRAM) {
+    public Computador(String id, int capacidadRAM, GestorMetricas gestorMetricas) {
         this.id = id;
         this.memoriaRAM = new MemoriaRAM(capacidadRAM);
+        this.gestorMetricas = gestorMetricas;
         this.cpu = new Cpu();
         
         this.colaNuevos = new Cola<>();
@@ -131,6 +133,7 @@ public class Computador {
 
         // 3. Ejecutar instrucción actual en la CPU
         if (cpu.estaOcupada()) {
+            gestorMetricas.registrarCicloCPU();
             Pcb enCpu = cpu.getProcesoEnEjecucion();
             
             // Si el proceso interactúa con un buffer
@@ -145,8 +148,7 @@ public class Computador {
                 memoriaRAM.liberarProceso(enCpu);
                 colaTerminados.encolar(enCpu);
                 cpu.setProcesoEnEjecucion(null);
-                
-                // Al liberar memoria, revisamos si puede entrar alguien nuevo
+                gestorMetricas.registrarProcesoCompletado(enCpu, 0, enCpu.getTiempoModoSO());
                 intentarAdmitirNuevos();
             }
         }
