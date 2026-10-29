@@ -16,6 +16,15 @@ import kernel.Cpu;
 import kernel.Pcb;
 import metricas.GestorMetricas;
 
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
@@ -53,6 +62,11 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
     private JLabel lblCumplimientoDeadlines;
     private JLabel lblIndiceEquidad;
     private JLabel lblProdCons;
+    
+    // Componentes de la Gráfica JFreeChart
+    private XYSeriesCollection datasetCPU;
+    private XYSeries[] seriesComputadoresCPU;
+    private JFreeChart chartCPU;
 
     private ConfiguracionSimulacion configuracionActual;
     private Computador[] listaComputadores;
@@ -187,69 +201,134 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
     }
 
     private JPanel crearPanelLateralDerecho() {
-        JPanel pnlRight = new JPanel(new GridLayout(3, 1, 0, 8));
-        pnlRight.setBackground(COLOR_BG);
+    JPanel pnlRight = new JPanel(new GridLayout(4, 1, 0, 6)); 
+    pnlRight.setBackground(COLOR_BG);
 
-        // 1. Panel de Buffers
-        JPanel pnlBuffers = new JPanel(new BorderLayout());
-        pnlBuffers.setBackground(COLOR_PANEL_BG);
-        pnlBuffers.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_CARD_BG),
-            "Buffers Compartidos & Semáforos", 0, 0, new Font("Segoe UI", Font.BOLD, 12), COLOR_ACCENT_BLUE));
+    // 1. Panel de Buffers Compartidos
+    JPanel pnlBuffers = new JPanel(new BorderLayout());
+    pnlBuffers.setBackground(COLOR_PANEL_BG);
+    pnlBuffers.setBorder(BorderFactory.createTitledBorder(
+        BorderFactory.createLineBorder(COLOR_CARD_BG),
+        "Buffers Compartidos & Semáforos", 0, 0, new Font("Segoe UI", Font.BOLD, 12), COLOR_ACCENT_BLUE));
 
-        modelBuffers = new DefaultTableModel(
-            new Object[]{"ID Buffer", "Capacidad", "Elementos", "Anfitrión", "Mutex", "Llenos", "Vacíos"}, 0
-        );
-        tblBuffersEstado = new JTable(modelBuffers);
-        estilarTabla(tblBuffersEstado);
-        pnlBuffers.add(new JScrollPane(tblBuffersEstado), BorderLayout.CENTER);
+    modelBuffers = new DefaultTableModel(
+        new Object[]{"ID Buffer", "Capacidad", "Elementos", "Anfitrión", "Mutex", "Llenos", "Vacíos"}, 0
+    );
+    tblBuffersEstado = new JTable(modelBuffers);
+    estilarTabla(tblBuffersEstado);
+    pnlBuffers.add(new JScrollPane(tblBuffersEstado), BorderLayout.CENTER);
 
-        JButton btnNuevoBuffer = crearBotonEstilizado("+ Crear Nuevo Buffer en Caliente", COLOR_CARD_BG);
-        btnNuevoBuffer.addActionListener(this::accionCrearNuevoBuffer);
-        pnlBuffers.add(btnNuevoBuffer, BorderLayout.SOUTH);
+    JButton btnNuevoBuffer = crearBotonEstilizado("+ Crear Nuevo Buffer en Caliente", COLOR_CARD_BG);
+    btnNuevoBuffer.addActionListener(this::accionCrearNuevoBuffer);
+    pnlBuffers.add(btnNuevoBuffer, BorderLayout.SOUTH);
 
-        // 2. Panel de Métricas
-        JPanel pnlMetricas = new JPanel(new GridLayout(3, 2, 5, 5));
-        pnlMetricas.setBackground(COLOR_PANEL_BG);
-        pnlMetricas.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_CARD_BG),
-            "Métricas de Rendimiento del Clúster", 0, 0, new Font("Segoe UI", Font.BOLD, 12), COLOR_ACCENT_BLUE));
+    // 2. Gráfica Comparativa de CPU (JFreeChart)
+    JPanel pnlGraficaCPU = crearPanelGraficaCPU();
 
-        lblThroughput = new JLabel("Throughput: 0.0 proc/ciclo");
-        lblUtilizacionCPU = new JLabel("Uso CPU: 0.0%");
-        lblTiempoRespuesta = new JLabel("T. Respuesta Prom.: 0.0");
-        lblCumplimientoDeadlines = new JLabel("Tasa Deadlines: 100.0%");
-        lblIndiceEquidad = new JLabel("Equidad: 1.00");
-        lblProdCons = new JLabel("Prod / Cons: 0 / 0");
+    // 3. Panel de Métricas Textuales
+    JPanel pnlMetricas = new JPanel(new GridLayout(3, 2, 5, 2));
+    pnlMetricas.setBackground(COLOR_PANEL_BG);
+    pnlMetricas.setBorder(BorderFactory.createTitledBorder(
+        BorderFactory.createLineBorder(COLOR_CARD_BG),
+        "Métricas de Rendimiento del Clúster", 0, 0, new Font("Segoe UI", Font.BOLD, 12), COLOR_ACCENT_BLUE));
 
-        JLabel[] lbls = {lblThroughput, lblUtilizacionCPU, lblTiempoRespuesta, lblCumplimientoDeadlines, lblIndiceEquidad, lblProdCons};
-        for (JLabel l : lbls) {
-            l.setForeground(COLOR_TEXT_MAIN);
-            l.setFont(new Font("Segoe UI", Font.PLAIN, 11));
-            pnlMetricas.add(l);
-        }
+    lblThroughput = new JLabel("Throughput: 0.0 proc/ciclo");
+    lblUtilizacionCPU = new JLabel("Uso CPU: 0.0%");
+    lblTiempoRespuesta = new JLabel("T. Respuesta Prom.: 0.0");
+    lblCumplimientoDeadlines = new JLabel("Tasa Deadlines: 100.0%");
+    lblIndiceEquidad = new JLabel("Equidad (Jain): 1.00");
+    lblProdCons = new JLabel("Prod / Cons: 0 / 0");
 
-        // 3. Log de Eventos del Kernel
-        JPanel pnlLog = new JPanel(new BorderLayout());
-        pnlLog.setBackground(COLOR_PANEL_BG);
-        pnlLog.setBorder(BorderFactory.createTitledBorder(
-            BorderFactory.createLineBorder(COLOR_CARD_BG),
-            "Registro Global de Eventos del Kernel (Log)", 0, 0, new Font("Segoe UI", Font.BOLD, 12), COLOR_ACCENT_BLUE));
-
-        txtLogEventos = new JTextArea();
-        txtLogEventos.setEditable(false);
-        txtLogEventos.setBackground(new Color(15, 20, 30));
-        txtLogEventos.setForeground(new Color(180, 220, 180));
-        txtLogEventos.setFont(new Font("Consolas", Font.PLAIN, 11));
-        pnlLog.add(new JScrollPane(txtLogEventos), BorderLayout.CENTER);
-
-        pnlRight.add(pnlBuffers);
-        pnlRight.add(pnlMetricas);
-        pnlRight.add(pnlLog);
-
-        return pnlRight;
+    JLabel[] lbls = {lblThroughput, lblUtilizacionCPU, lblTiempoRespuesta, lblCumplimientoDeadlines, lblIndiceEquidad, lblProdCons};
+    for (JLabel l : lbls) {
+        l.setForeground(COLOR_TEXT_MAIN);
+        l.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        pnlMetricas.add(l);
     }
 
+    // 4. Log de Eventos del Kernel
+    JPanel pnlLog = new JPanel(new BorderLayout());
+    pnlLog.setBackground(COLOR_PANEL_BG);
+    pnlLog.setBorder(BorderFactory.createTitledBorder(
+        BorderFactory.createLineBorder(COLOR_CARD_BG),
+        "Registro Global de Eventos del Kernel (Log)", 0, 0, new Font("Segoe UI", Font.BOLD, 12), COLOR_ACCENT_BLUE));
+
+    txtLogEventos = new JTextArea();
+    txtLogEventos.setEditable(false);
+    txtLogEventos.setBackground(new Color(15, 20, 30));
+    txtLogEventos.setForeground(new Color(180, 220, 180));
+    txtLogEventos.setFont(new Font("Consolas", Font.PLAIN, 11));
+    pnlLog.add(new JScrollPane(txtLogEventos), BorderLayout.CENTER);
+
+   
+    pnlRight.add(pnlBuffers);    
+    pnlRight.add(pnlGraficaCPU); 
+    pnlRight.add(pnlMetricas);    
+    pnlRight.add(pnlLog);        
+
+    return pnlRight;
+}
+    
+    /**
+     * Construye la gráfica en pantalla
+     * @return 
+     */
+    private JPanel crearPanelGraficaCPU() {
+        datasetCPU = new XYSeriesCollection();
+
+        chartCPU = ChartFactory.createXYLineChart(
+            null,                       // Título
+            "Ciclo de Reloj",           // Eje X
+            "Uso CPU (%)",              // Eje Y
+            datasetCPU,
+            PlotOrientation.VERTICAL,
+            true,                       // Leyenda
+            true,                       // Tooltips
+            false
+        );
+
+        // 1. Configurar Fondo del Chart
+        chartCPU.setBackgroundPaint(COLOR_PANEL_BG);
+
+        // 2. Estilar la Leyenda (Texto Blanco y Fondo Oscuro Transparente)
+        if (chartCPU.getLegend() != null) {
+            chartCPU.getLegend().setItemPaint(Color.WHITE);
+            chartCPU.getLegend().setBackgroundPaint(new Color(15, 20, 30));
+        }
+
+        // 3. Estilar el Plot (Área de Dibujo)
+        XYPlot plot = chartCPU.getXYPlot();
+        plot.setBackgroundPaint(new Color(15, 20, 30));
+        plot.setDomainGridlinePaint(COLOR_CARD_BG);
+        plot.setRangeGridlinePaint(COLOR_CARD_BG);
+
+        // 4. Configurar Eje X (Ciclos)
+        plot.getDomainAxis().setLabelPaint(Color.WHITE);
+        plot.getDomainAxis().setTickLabelPaint(Color.WHITE);
+        plot.getDomainAxis().setAutoRange(true); // Se expande automáticamente con los ciclos
+
+        // 5. Configurar Eje Y (Porcentaje de CPU: Fijar estricto de 0 a 100%)
+        org.jfree.chart.axis.NumberAxis rangeAxis = (org.jfree.chart.axis.NumberAxis) plot.getRangeAxis();
+        rangeAxis.setRange(0.0, 105.0); // Rango fijo de 0 a 100%
+        rangeAxis.setLabelPaint(Color.WHITE);
+        rangeAxis.setTickLabelPaint(Color.WHITE);
+
+        // 6. Hacer las líneas del gráfico más gruesas para que sean visibles
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        renderer.setSeriesStroke(0, new BasicStroke(2.0f)); // Grosor de línea
+        plot.setRenderer(renderer);
+
+        // 7. Envolver en el ChartPanel
+        ChartPanel chartPanel = new ChartPanel(chartCPU);
+        chartPanel.setBackground(COLOR_PANEL_BG);
+        chartPanel.setPreferredSize(new Dimension(300, 180)); // Tamaño recomendado
+        chartPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createLineBorder(COLOR_CARD_BG),
+            "CPU vs. Tiempo", 0, 0, new Font("Segoe UI", Font.BOLD, 12), COLOR_ACCENT_BLUE));
+
+        return chartPanel;
+    }
+    
     public void inicializarSimulacion(ConfiguracionSimulacion config) {
         this.configuracionActual = config;
         RelojGlobal.reiniciar();
@@ -277,6 +356,8 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
         int nComp = (config.computadores != null) ? config.computadores.length : 0;
         listaComputadores = new Computador[nComp];
         panelesComputadores = new PanelComputadorUI[nComp];
+        seriesComputadoresCPU = new XYSeries[nComp];
+        datasetCPU.removeAllSeries();
         tabbedComputadores.removeAll();
 
         for (int i = 0; i < nComp; i++) {
@@ -289,6 +370,10 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
                     PoliticaPlanificacion.valueOf(cc.politicaInicial.toUpperCase()), cc.quantum
                 );
             }
+            
+            seriesComputadoresCPU[i] = new XYSeries("Comp " + cc.id);
+            seriesComputadoresCPU[i].add(0, 0.0);
+            datasetCPU.addSeries(seriesComputadoresCPU[i]);
 
             PanelComputadorUI panelUI = new PanelComputadorUI(listaComputadores[i]);
             panelesComputadores[i] = panelUI;
@@ -335,10 +420,17 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
     private void actualizarVistasGUI() {
         int cicloActual = RelojGlobal.getCicloActual();
 
-        // 1. Refrescar Paneles de Computadores
-        if (panelesComputadores != null) {
-            for (PanelComputadorUI pUI : panelesComputadores) {
-                if (pUI != null) pUI.refrescar();
+        // 1. Refrescar Paneles de Computadores y Gráfica
+        if (panelesComputadores != null && listaComputadores != null) {
+            for (int i = 0; i < listaComputadores.length; i++) {
+                Computador comp = listaComputadores[i];
+                panelesComputadores[i].refrescar();
+
+                // Actualizar la curva de CPU en la gráfica de JFreeChart
+                double usoCpuPercent = comp.getCpu().estaOcupada() ? 100.0 : 0.0;
+                if (seriesComputadoresCPU != null && i < seriesComputadoresCPU.length) {
+                    seriesComputadoresCPU[i].add(cicloActual, usoCpuPercent);
+                }
             }
         }
 
@@ -362,7 +454,7 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
         // 3. Refrescar Métricas
         if (gestorMetricasGlobal != null) {
             lblThroughput.setText(String.format("Throughput: %.2f proc/ciclo", gestorMetricasGlobal.calcularThroughput(cicloActual)));
-            lblUtilizacionCPU.setText(String.format("Uso CPU: %.1f%%", gestorMetricasGlobal.calcularUtilizacionCPU(cicloActual)));
+            lblUtilizacionCPU.setText(String.format("Uso CPU Global: %.1f%%", gestorMetricasGlobal.calcularUtilizacionCPU(cicloActual)));
             lblTiempoRespuesta.setText(String.format("T. Respuesta Prom.: %.1f", gestorMetricasGlobal.calcularTiempoRespuestaPromedio()));
             lblCumplimientoDeadlines.setText(String.format("Tasa Deadlines: %.1f%%", gestorMetricasGlobal.calcularTasaCumplimientoDeadlines()));
             lblIndiceEquidad.setText(String.format("Equidad (Jain): %.2f", gestorMetricasGlobal.calcularEquidad()));
