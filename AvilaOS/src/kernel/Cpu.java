@@ -5,6 +5,8 @@
 package kernel;
 
 import enums.EstadoProceso;
+import enums.EstadoProceso;
+import enums.ModoEjecucion;
 
 /**
  * Representa la CPU de un computador en ÁvilaOS, encargada de ejecutar
@@ -14,19 +16,22 @@ import enums.EstadoProceso;
  */
 public class Cpu {
     private Pcb procesoEnEjecucion;
+    private ModoEjecucion modo;
 
     public Cpu() {
         this.procesoEnEjecucion = null;
+        this.modo = ModoEjecucion.USUARIO;
     }
-    
-    /**
-     * Ejecuta un ciclo de reloj sobre el proceso actual en la CPU.
-     * Incrementa el PC y el MAR linealmente y descuenta el tiempo restante[cite: 1].
-     */
-    public void ejecutarCiclo() {
+
+public void ejecutarCiclo() {
         if (procesoEnEjecucion != null && procesoEnEjecucion.getEstado() == EstadoProceso.RUNNING) {
             procesoEnEjecucion.incrementarPC();
             procesoEnEjecucion.decrementarTiempoEjecucion();
+
+            // Por defecto, tras procesar las instrucciones, la CPU vuelve a modo usuario
+            this.modo = ModoEjecucion.USUARIO;
+
+            // Verificar finalización del proceso
             if (procesoEnEjecucion.getTiempoRestanteEjecucion() <= 0) {
                 procesoEnEjecucion.setEstado(EstadoProceso.EXIT);
                 procesoEnEjecucion = null;
@@ -34,9 +39,7 @@ public class Cpu {
         }
     }
 
-    public Pcb getProcesoEnEjecucion() {
-        return procesoEnEjecucion;
-    }
+    public Pcb getProcesoEnEjecucion() { return procesoEnEjecucion; }
 
     public void setProcesoEnEjecucion(Pcb procesoEnEjecucion) {
         this.procesoEnEjecucion = procesoEnEjecucion;
@@ -45,7 +48,13 @@ public class Cpu {
         }
     }
 
-    public boolean estaOcupada() {
-        return procesoEnEjecucion != null;
+    public void setModoSO() {
+        this.modo = ModoEjecucion.SISTEMA_OPERATIVO;
     }
+    
+    public boolean estaOcupada() { return procesoEnEjecucion != null; }
+
+    public ModoEjecucion getModo() { return modo; }
+
+    public void setModo(ModoEjecucion modo) { this.modo = modo; }
 }
