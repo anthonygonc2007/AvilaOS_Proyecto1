@@ -7,15 +7,18 @@ package kernel;
 import enums.EstadoProceso;
 import enums.PoliticaPlanificacion;
 import estructuras.Cola;
+import estructuras.ListaEnlazada;
 import interfaces.Planificador;
 import metricas.GestorMetricas;
+import interfaces.IClockObserver;
+import core.RelojGlobal;
 /**
  * Representa un nodo del clúster (Computador) en ÁvilaOS.
  * Integra la CPU, Memoria RAM y las colas del sistema operativo.
  * 
  * @author Antho
  */
-public class Computador {
+public class Computador implements IClockObserver {
     private final String id;
     private final MemoriaRAM memoriaRAM;
     private final Cpu cpu;
@@ -25,6 +28,7 @@ public class Computador {
     private final Cola<Pcb> colaListos;
     private final Cola<Pcb> colaBloqueados;
     private final Cola<Pcb> colaTerminados;
+    private ListaEnlazada<BufferAcotado> listaBuffersGlobales;
 
     // Componentes de planificación
     private PoliticaPlanificacion politicaActual;
@@ -32,10 +36,11 @@ public class Computador {
     private int quantum;
     private final GestorMetricas gestorMetricas;
 
-    public Computador(String id, int capacidadRAM, GestorMetricas gestorMetricas) {
+    public Computador(String id, int capacidadRAM, GestorMetricas gestorMetricas, ListaEnlazada<BufferAcotado> buffers) {
         this.id = id;
         this.memoriaRAM = new MemoriaRAM(capacidadRAM);
         this.gestorMetricas = gestorMetricas;
+        this.listaBuffersGlobales = buffers;
         this.cpu = new Cpu();
         
         this.colaNuevos = new Cola<>();
@@ -46,6 +51,8 @@ public class Computador {
         // Política inicial por defecto
         this.quantum = 2;
         setPoliticaPlanificacion(PoliticaPlanificacion.FCFS, this.quantum);
+        
+        RelojGlobal.registrarObservador(this);
     }
 
     /**
@@ -125,25 +132,20 @@ public class Computador {
      * Coordina un ciclo de reloj para los componentes de este computador.
      */
     public void ejecutarCicloReloj(BufferAcotado[] buffers) {
-        // 1. Intentar admitir procesos retenidos en Nuevos
         intentarAdmitirNuevos();
-
-        // 2. Decrementar el tiempo límite (Deadlines)
+        revisarDesbloqueados(); 
         decrementarDeadlines();
-
-        // 3. Ejecutar instrucción actual en la CPU
         if (cpu.estaOcupada()) {
             gestorMetricas.registrarCicloCPU();
             Pcb enCpu = cpu.getProcesoEnEjecucion();
-            
-            // Si el proceso interactúa con un buffer
+
             if (enCpu.getTipo() == enums.ProcesoTipo.PRODUCTOR || enCpu.getTipo() == enums.ProcesoTipo.CONSUMIDOR) {
+                cpu.setModoSO();
                 procesarPcbBuffer(enCpu, buffers);
             } else {
                 cpu.ejecutarCiclo();
             }
 
-            // 4. Liberación de recursos al terminar
             if (enCpu.getEstado() == EstadoProceso.EXIT) {
                 memoriaRAM.liberarProceso(enCpu);
                 colaTerminados.encolar(enCpu);
@@ -153,7 +155,6 @@ public class Computador {
             }
         }
 
-        // 5. Invocar al planificador activo
         if (planificador != null) {
             planificador.planificar(colaListos, cpu);
         }
@@ -165,27 +166,35 @@ public class Computador {
     private void procesarPcbBuffer(Pcb p, BufferAcotado[] buffers) {
         BufferAcotado buf = buscarBuffer(p.getBufferAsociadoId(), buffers);
         if (buf == null) {
-            cpu.ejecutarCiclo(); // Cae en comportamiento normal (CPU-bound) si el buffer no existe
+            cpu.ejecutarCiclo(); 
             return;
         }
 
-        if (p.getTipo() == enums.ProcesoTipo.PRODUCTOR) {
-            boolean exito = buf.producir(p, "Item-" + p.getId());
-            if (!exito) {
-                // Se bloqueó en semWait
+        int cicloActual = p.getTiempoModoSO(); 
+        p.incrementarTiempoModoSO(1);
+
+        if (cicloActual % Math.max(1, p.getCiclosProducirConsumir()) == 0) {
+            boolean exitoOp = true;
+            if (p.getTipo() == enums.ProcesoTipo.PRODUCTOR) {
+                exitoOp = buf.producir(p, "Item-" + p.getId());
+            } else if (p.getTipo() == enums.ProcesoTipo.CONSUMIDOR) {
+                Object item = buf.consumir(p);
+                exitoOp = (item != null);
+            }
+
+            if (exitoOp) {
+                if (p.getElementosProcesados() >= p.getElementosRequeridos()) {
+                    p.setEstado(EstadoProceso.EXIT);
+                }
+            } else {
                 cpu.setProcesoEnEjecucion(null);
                 colaBloqueados.encolar(p);
             }
-        } else if (p.getTipo() == enums.ProcesoTipo.CONSUMIDOR) {
-            Object item = buf.consumir(p);
-            if (item == null && p.getEstado() != EstadoProceso.RUNNING) {
-                // Se bloqueó en semWait
-                cpu.setProcesoEnEjecucion(null);
-                colaBloqueados.encolar(p);
-            }
+        } else {
+            cpu.ejecutarCiclo();
         }
     }
-
+ 
     private BufferAcotado buscarBuffer(String idBuffer, BufferAcotado[] buffers) {
         if (buffers == null) return null;
         for (BufferAcotado b : buffers) {
@@ -205,13 +214,46 @@ public class Computador {
         while (!cola.esVacia()) {
             Pcb p = cola.desencolar();
             p.setDeadline(p.getDeadline() - 1);
-            aux.encolar(p);
+
+            // CORRECCIÓN 1: Expulsar el proceso si el tiempo se agotó
+            if (p.getDeadline() <= 0 && p.getEstado() != EstadoProceso.EXIT) {
+                p.setEstado(EstadoProceso.EXIT);
+                memoriaRAM.liberarProceso(p);
+                colaTerminados.encolar(p);
+                gestorMetricas.registrarProcesoCompletado(p, 0, p.getTiempoModoSO());
+            } else {
+                aux.encolar(p);
+            }
         }
         while (!aux.esVacia()) {
             cola.encolar(aux.desencolar());
         }
     }
+    private void revisarDesbloqueados() {
+    if (colaBloqueados.esVacia()) return;
+    Cola<Pcb> aux = new Cola<>();
+    while (!colaBloqueados.esVacia()) {
+        Pcb p = colaBloqueados.desencolar();
+        // Si el semáforo interno del buffer ya le cambió el estado a READY
+        if (p.getEstado() == EstadoProceso.READY) {
+            colaListos.encolar(p);
+        } else {
+            aux.encolar(p);
+        }
+    }
+    while (!aux.esVacia()) {
+        colaBloqueados.encolar(aux.desencolar());
+    }
+}
 
+    @Override
+    public void tick(int cicloActual) {
+        BufferAcotado[] arregloBuffers = new BufferAcotado[this.listaBuffersGlobales.getTamano()];
+        for (int i = 0; i < this.listaBuffersGlobales.getTamano(); i++) {
+            arregloBuffers[i] = this.listaBuffersGlobales.obtener(i);
+        }
+        ejecutarCicloReloj(arregloBuffers);
+    }
     // --- Getters ---
     public String getId() { return id; }
     public MemoriaRAM getMemoriaRAM() { return memoriaRAM; }

@@ -56,7 +56,7 @@ public class Pcb {
         this.programCounter++;
         this.memoryAddressRegister++;
     }
-
+    
     public void decrementarTiempoEjecucion() {
         if (tiempoRestanteEjecucion > 0) {
             tiempoRestanteEjecucion--;

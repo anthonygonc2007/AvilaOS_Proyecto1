@@ -23,25 +23,19 @@ public class Cpu {
         this.modo = ModoEjecucion.USUARIO;
     }
 
-    public void ejecutarCiclo() {
+public void ejecutarCiclo() {
         if (procesoEnEjecucion != null && procesoEnEjecucion.getEstado() == EstadoProceso.RUNNING) {
-            // Si el proceso consume llamadas del Kernel, cambia a Modo SO
-            if (procesoEnEjecucion.getTiempoModoSO() > 0) {
-                this.modo = ModoEjecucion.SISTEMA_OPERATIVO;
-            } else {
-                this.modo = ModoEjecucion.USUARIO;
-            }
-
             procesoEnEjecucion.incrementarPC();
             procesoEnEjecucion.decrementarTiempoEjecucion();
 
+            // Por defecto, tras procesar las instrucciones, la CPU vuelve a modo usuario
+            this.modo = ModoEjecucion.USUARIO;
+
+            // Verificar finalización del proceso
             if (procesoEnEjecucion.getTiempoRestanteEjecucion() <= 0) {
                 procesoEnEjecucion.setEstado(EstadoProceso.EXIT);
                 procesoEnEjecucion = null;
-                this.modo = ModoEjecucion.USUARIO;
             }
-        } else {
-            this.modo = ModoEjecucion.USUARIO;
         }
     }
 
@@ -54,6 +48,10 @@ public class Cpu {
         }
     }
 
+    public void setModoSO() {
+        this.modo = ModoEjecucion.SISTEMA_OPERATIVO;
+    }
+    
     public boolean estaOcupada() { return procesoEnEjecucion != null; }
 
     public ModoEjecucion getModo() { return modo; }

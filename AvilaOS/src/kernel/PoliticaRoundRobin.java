@@ -63,7 +63,7 @@ public class PoliticaRoundRobin implements Planificador {
         while (!colaListos.esVacia()) {
             Pcb proceso = colaListos.desencolar();
             if (proceso != null) {
-                proceso.decrementarDeadline();
+                //proceso.decrementarDeadline();
                 if (proceso.getDeadline() <= 0) {
                     proceso.setEstado(EstadoProceso.EXIT);
                 } else {
