@@ -13,26 +13,24 @@ public class PoliticaPrioridades implements Planificador {
     @Override
     public void planificar(Cola<Pcb> colaListos, Cpu cpu) {
         if (colaListos == null || colaListos.esVacia()) return;
-
+        
         reordenarPorPrioridad(colaListos);
-
+        Pcb primeroListo = colaListos.verFrente();
         if (!cpu.estaOcupada()) {
+            // Si la CPU está libre, simplemente entra el mejor
             Pcb siguiente = colaListos.desencolar();
-            if (siguiente != null) {
-                siguiente.setEstado(EstadoProceso.RUNNING);
-                cpu.setProcesoEnEjecucion(siguiente);
-            }
+            siguiente.setEstado(EstadoProceso.RUNNING);
+            cpu.setProcesoEnEjecucion(siguiente);
         } else {
-            // Desalojo apropiativo: Menor entero representa Mayor Prioridad
             Pcb actual = cpu.getProcesoEnEjecucion();
-            Pcb primeroListo = colaListos.verFrente();
-
             if (actual != null && primeroListo != null) {
-                if (primeroListo.getPrioridad() < actual.getPrioridad()) {
+                if (primeroListo.getPrioridad() <= actual.getPrioridad()) {
                     // Desalojar proceso actual
                     actual.setEstado(EstadoProceso.READY);
                     colaListos.encolar(actual);
+                    reordenarPorPrioridad(colaListos); // Reordenar por si el desalojado tiene mejor prioridad que otros
 
+                    // Entra el nuevo mejor
                     Pcb nuevo = colaListos.desencolar();
                     nuevo.setEstado(EstadoProceso.RUNNING);
                     cpu.setProcesoEnEjecucion(nuevo);

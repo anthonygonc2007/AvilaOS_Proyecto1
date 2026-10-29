@@ -13,6 +13,7 @@ public class BufferAcotado {
     private final String computadorPropietarioId; // ID del computador donde reside en RAM
     private final Object[] buffer;
     private int in, out;
+     private int cantidadElementos;
 
     // Semáforos para sincronización
     private final Semaforo mutex;
@@ -28,6 +29,7 @@ public class BufferAcotado {
         this.buffer = new Object[capacidad];
         this.in = 0;
         this.out = 0;
+        this.cantidadElementos = 0;
 
         this.mutex = new Semaforo(1);
         this.espacios = new Semaforo(capacidad);
@@ -47,6 +49,7 @@ public class BufferAcotado {
         // Sección crítica
         buffer[in] = item;
         in = (in + 1) % buffer.length;
+        cantidadElementos++;
         proceso.setElementosProcesados(proceso.getElementosProcesados() + 1);
 
         mutex.semSignal(proceso);
@@ -70,6 +73,7 @@ public class BufferAcotado {
         Object item = buffer[out];
         buffer[out] = null;
         out = (out + 1) % buffer.length;
+        cantidadElementos--;
         proceso.setElementosProcesados(proceso.getElementosProcesados() + 1);
 
         mutex.semSignal(proceso);
@@ -85,4 +89,10 @@ public class BufferAcotado {
     }
 
     public String getIdBuffer() { return idBuffer; }
+    public String getComputadorPropietarioId() { return computadorPropietarioId; }
+    public int getCapacidad() { return buffer.length; }
+    public int getCantidadElementos() { return cantidadElementos; }
+    public int getValorMutex() { return mutex.getValor(); }
+    public int getValorEspacios() { return espacios.getValor(); }
+    public int getValorElementos() { return elementos.getValor(); }
 }

@@ -442,10 +442,12 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
                 if (b != null) {
                     modelBuffers.addRow(new Object[]{
                         b.getIdBuffer(),
-                        "N/A",
-                        "Activo",
-                        "Anfitrión",
-                        "1", "0", "N"
+                        b.getCapacidad(),
+                        b.getCantidadElementos(),
+                        b.getComputadorPropietarioId(),
+                        b.getValorMutex(),
+                        b.getValorEspacios(),
+                        b.getValorElementos()
                     });
                 }
             }
@@ -489,6 +491,72 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
             }
         }
     }
+    
+    private void accionCrearNuevoProceso(ActionEvent e) {
+        if (listaComputadores == null || listaComputadores.length == 0) {
+            JOptionPane.showMessageDialog(this, "No hay computadores inicializados.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JTextField txtNombre = new JTextField("Nuevo_Proceso");
+        JComboBox<String> cbComp = new JComboBox<>();
+        for (Computador c : listaComputadores) cbComp.addItem(c.getId());
+        
+        JComboBox<String> cbTipo = new JComboBox<>(new String[]{"CPU_BOUND", "IO_BOUND", "PRODUCTOR", "CONSUMIDOR"});
+        JTextField txtPrio = new JTextField("1");
+        JTextField txtMem = new JTextField("128");
+        JTextField txtDeadline = new JTextField("100");
+        JTextField txtTiempo = new JTextField("20");
+        
+        JTextField txtBufferId = new JTextField("");
+        JTextField txtCiclosProd = new JTextField("1");
+        JTextField txtElemReq = new JTextField("5");
+
+        Object[] message = {
+            "Nombre:", txtNombre,
+            "Computador:", cbComp,
+            "Tipo:", cbTipo,
+            "Prioridad (menor = mayor):", txtPrio,
+            "Memoria (MB):", txtMem,
+            "Deadline (ciclos):", txtDeadline,
+            "Tiempo Ejecución (ciclos):", txtTiempo,
+            "--- Solo para Prod/Cons ---",
+            "ID Buffer Asociado:", txtBufferId,
+            "Ciclos entre Prod/Cons:", txtCiclosProd,
+            "Elementos Requeridos:", txtElemReq
+        };
+
+        if (JOptionPane.showConfirmDialog(this, message, "Crear Nuevo Proceso", JOptionPane.OK_CANCEL_OPTION) == JOptionPane.OK_OPTION) {
+            try {
+                String nombre = txtNombre.getText().trim();
+                String compId = (String) cbComp.getSelectedItem();
+                enums.ProcesoTipo tipo = enums.ProcesoTipo.valueOf(((String) cbTipo.getSelectedItem()).toUpperCase());
+                int prio = Integer.parseInt(txtPrio.getText().trim());
+                int mem = Integer.parseInt(txtMem.getText().trim());
+                long deadline = Long.parseLong(txtDeadline.getText().trim());
+                int tiempo = Integer.parseInt(txtTiempo.getText().trim());
+
+                Pcb pcb = new Pcb(nombre, compId, tipo, prio, mem, deadline, tiempo);
+                
+                if (tipo == enums.ProcesoTipo.PRODUCTOR || tipo == enums.ProcesoTipo.CONSUMIDOR) {
+                    pcb.setBufferAsociadoId(txtBufferId.getText().trim());
+                    pcb.setCiclosProducirConsumir(Integer.parseInt(txtCiclosProd.getText().trim()));
+                    pcb.setElementosRequeridos(Integer.parseInt(txtElemReq.getText().trim()));
+                }
+
+                for (Computador c : listaComputadores) {
+                    if (c.getId().equals(compId)) {
+                        c.admitirProceso(pcb);
+                        registrarLog("Proceso " + nombre + " creado en caliente en Computador " + compId);
+                        break;
+                    }
+                }
+                actualizarVistasGUI();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Parámetros inválidos: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
 
     private JButton crearBotonEstilizado(String texto, Color bg) {
         JButton btn = new JButton(texto);
@@ -523,6 +591,9 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
         private DefaultTableModel modelListos;
         private DefaultTableModel modelBloqueados;
         private DefaultTableModel modelTerminados;
+        
+        private JComboBox<PoliticaPlanificacion> cbPolitica;
+        private JSpinner spinnerQuantum;
 
         public PanelComputadorUI(Computador comp) {
             this.computador = comp;
@@ -530,11 +601,11 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
             setBackground(COLOR_BG);
             setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-            // Superior: CPU y RAM
-            JPanel pnlTop = new JPanel(new GridLayout(1, 2, 8, 0));
+            // PANEL SUPERIOR: CPU, RAM Y CONTROLES DE PLANIFICACIÓN
+            JPanel pnlTop = new JPanel(new GridLayout(1, 3, 8, 0)); // Ahora son 3 columnas
             pnlTop.setOpaque(false);
 
-            JPanel cardCPU = crearCardPanel("Estado de CPU & Modo de Ejecución");
+            JPanel cardCPU = crearCardPanel("Estado de CPU & Modo");
             lblProcesoRunning = new JLabel("Proceso: NINGUNO (CPU Libre)");
             lblProcesoRunning.setForeground(COLOR_ACCENT_GREEN);
             lblProcesoRunning.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -560,9 +631,46 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
             cardRAM.add(lblRAMInfo);
             cardRAM.add(Box.createVerticalStrut(5));
             cardRAM.add(barRAM);
+            
+            //PANEL DE CONTROL DE PLANIFICACIÓN
+            JPanel cardPlanificacion = crearCardPanel("Planificación (Cambio en Caliente)");
+            
+            JPanel pnlPolitica = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            pnlPolitica.setOpaque(false);
+            JLabel lblPolitica = new JLabel("Política:");
+            lblPolitica.setForeground(COLOR_TEXT_MAIN);
+            cbPolitica = new JComboBox<>(PoliticaPlanificacion.values());
+            cbPolitica.setSelectedItem(comp.getPoliticaActual());
+            cbPolitica.setBackground(COLOR_CARD_BG);
+            cbPolitica.setForeground(COLOR_TEXT_MAIN);
+            pnlPolitica.add(lblPolitica);
+            pnlPolitica.add(cbPolitica);
+
+            JPanel pnlQuantum = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+            pnlQuantum.setOpaque(false);
+            JLabel lblQuantum = new JLabel("Quantum:");
+            lblQuantum.setForeground(COLOR_TEXT_MAIN);
+            spinnerQuantum = new JSpinner(new SpinnerNumberModel(comp.getQuantum(), 1, 100, 1));
+            spinnerQuantum.setBackground(COLOR_CARD_BG);
+            pnlQuantum.add(lblQuantum);
+            pnlQuantum.add(spinnerQuantum);
+            
+            // Listener para cambios
+            Runnable aplicarCambios = () -> {
+                PoliticaPlanificacion nuevaPol = (PoliticaPlanificacion) cbPolitica.getSelectedItem();
+                int nuevoQuantum = (int) spinnerQuantum.getValue();
+                computador.setPoliticaPlanificacion(nuevaPol, nuevoQuantum);
+                registrarLog("Computador " + computador.getId() + " cambió política a " + nuevaPol + " (Q=" + nuevoQuantum + ")");
+            };
+            cbPolitica.addActionListener(ev -> aplicarCambios.run());
+            spinnerQuantum.addChangeListener(ev -> aplicarCambios.run());
+
+            cardPlanificacion.add(pnlPolitica);
+            cardPlanificacion.add(pnlQuantum);
 
             pnlTop.add(cardCPU);
             pnlTop.add(cardRAM);
+            pnlTop.add(cardPlanificacion); // Añadir el nuevo panel
             add(pnlTop, BorderLayout.NORTH);
 
             // Centro: Visualización de las 4 Colas Exigidas
@@ -632,14 +740,12 @@ public class VistaMonitoreo extends javax.swing.JFrame implements IClockObserver
                 lblModoEjecucion.setForeground(COLOR_TEXT_MUTED);
             }
 
-            // RAM
             int ramUsada = computador.getMemoriaRAM().getMemoriaUsada();
             int ramTotal = computador.getMemoriaRAM().getCapacidadTotal();
             barRAM.setMaximum(ramTotal);
             barRAM.setValue(ramUsada);
             barRAM.setString(ramUsada + " MB / " + ramTotal + " MB");
 
-            // Refrescar las 4 colas
             refrescarTablaCola(modelNuevos, computador.getColaNuevos(), p -> new Object[]{p.getId(), p.getNombre(), p.getMemoriaAsignada(), p.getTipo()});
             refrescarTablaCola(modelListos, computador.getColaListos(), p -> new Object[]{p.getId(), p.getNombre(), p.getPrioridad(), p.getDeadline()});
             refrescarTablaCola(modelBloqueados, computador.getColaBloqueados(), p -> new Object[]{p.getId(), p.getNombre(), p.getMotivoBloqueo()});

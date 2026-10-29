@@ -135,6 +135,10 @@ public class Computador implements IClockObserver {
         intentarAdmitirNuevos();
         revisarDesbloqueados(); 
         decrementarDeadlines();
+        if (planificador != null) {
+            planificador.planificar(colaListos, cpu);
+        }
+
         if (cpu.estaOcupada()) {
             gestorMetricas.registrarCicloCPU();
             Pcb enCpu = cpu.getProcesoEnEjecucion();
@@ -161,10 +165,6 @@ public class Computador implements IClockObserver {
                 gestorMetricas.registrarProcesoCompletado(enCpu, 0, enCpu.getTiempoModoSO());
                 intentarAdmitirNuevos();
             }
-        }
-
-        if (planificador != null) {
-            planificador.planificar(colaListos, cpu);
         }
     }
 
@@ -286,4 +286,5 @@ private void decrementarDeadlinesCola(Cola<Pcb> cola) {
     public Cola<Pcb> getColaBloqueados() { return colaBloqueados; }
     public Cola<Pcb> getColaTerminados() { return colaTerminados; }
     public PoliticaPlanificacion getPoliticaActual() { return politicaActual; }
+    public int getQuantum() { return quantum; }
 }
