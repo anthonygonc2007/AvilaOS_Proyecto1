@@ -8,13 +8,6 @@ import estructuras.Cola;
 import interfaces.Planificador;
 import enums.EstadoProceso;
 
-/**
- * Implementación de la política de Planificación por Prioridades Apropiativas.
- * Si entra un proceso con mayor prioridad (número menor o mayor según convención del equipo),
- * se desalojará al proceso en ejecución actual.
- * 
- * @author 
- */
 public class PoliticaPrioridades implements Planificador {
 
     @Override
@@ -30,9 +23,21 @@ public class PoliticaPrioridades implements Planificador {
                 cpu.setProcesoEnEjecucion(siguiente);
             }
         } else {
-            // Lógica apropiativa: evaluar si el primero de la colaListos tiene mayor prioridad que el actual en CPU
+            // Desalojo apropiativo: Menor entero representa Mayor Prioridad
             Pcb actual = cpu.getProcesoEnEjecucion();
-            // Implementar comparación de prioridades y desalojo si aplica
+            Pcb primeroListo = colaListos.verFrente();
+
+            if (actual != null && primeroListo != null) {
+                if (primeroListo.getPrioridad() < actual.getPrioridad()) {
+                    // Desalojar proceso actual
+                    actual.setEstado(EstadoProceso.READY);
+                    colaListos.encolar(actual);
+
+                    Pcb nuevo = colaListos.desencolar();
+                    nuevo.setEstado(EstadoProceso.RUNNING);
+                    cpu.setProcesoEnEjecucion(nuevo);
+                }
+            }
         }
     }
 
@@ -57,29 +62,24 @@ public class PoliticaPrioridades implements Planificador {
         }
     }
 
-    /**
-     * Reordena la cola de listos según el nivel de prioridad del PCB.
-     * @param colaListos La cola de listos a ordenar.
-     */
     private void reordenarPorPrioridad(Cola<Pcb> colaListos) {
-    if (colaListos == null || colaListos.esVacia()) return;
+        if (colaListos == null || colaListos.esVacia()) return;
 
         Cola<Pcb> colaTemporal = new Cola<>();
-        int tamaño = 0;
-        
+        int tamano = 0;
+
         while (!colaListos.esVacia()) {
             colaTemporal.encolar(colaListos.desencolar());
-            tamaño++;
+            tamano++;
         }
 
-        Pcb[] arregloProcesos = new Pcb[tamaño];
-        for (int i = 0; i < tamaño; i++) {
+        Pcb[] arregloProcesos = new Pcb[tamano];
+        for (int i = 0; i < tamano; i++) {
             arregloProcesos[i] = colaTemporal.desencolar();
         }
 
-        // Ordenamiento por burbuja basado en la prioridad (ej: menor valor = mayor prioridad)
-        for (int i = 0; i < tamaño - 1; i++) {
-            for (int j = 0; j < tamaño - i - 1; j++) {
+        for (int i = 0; i < tamano - 1; i++) {
+            for (int j = 0; j < tamano - i - 1; j++) {
                 if (arregloProcesos[j].getPrioridad() > arregloProcesos[j + 1].getPrioridad()) {
                     Pcb temp = arregloProcesos[j];
                     arregloProcesos[j] = arregloProcesos[j + 1];
@@ -88,7 +88,7 @@ public class PoliticaPrioridades implements Planificador {
             }
         }
 
-        for (int i = 0; i < tamaño; i++) {
+        for (int i = 0; i < tamano; i++) {
             colaListos.encolar(arregloProcesos[i]);
         }
     }
