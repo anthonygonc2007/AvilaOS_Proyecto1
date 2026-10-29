@@ -17,46 +17,37 @@ import javax.swing.table.DefaultTableModel;
  * @author Usuario
  */
 public class VistaConfiguracion extends javax.swing.JFrame {
-    
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(VistaConfiguracion.class.getName());
-
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(VistaMonitoreo.class.getName());
     private static final Color COLOR_BG = new Color(18, 24, 38);
     private static final Color COLOR_PANEL_BG = new Color(28, 36, 54);
     private static final Color COLOR_CARD_BG = new Color(38, 48, 70);
     private static final Color COLOR_TEXT_MAIN = new Color(240, 244, 250);
-    private static final Color COLOR_TEXT_MUTED = new Color(160, 175, 200);
     private static final Color COLOR_ACCENT_BLUE = new Color(51, 153, 255);
     private static final Color COLOR_ACCENT_GREEN = new Color(46, 204, 113);
 
-    /**
-     * Creates new form VistaConfiguracion
-     */
     public VistaConfiguracion() {
         initComponents();
         estiloFondo();
-        txtNumComp.setText("1");
+        txtNumComp.setText("2"); // Mínimo 2 computadores según enunciado
         inicializarTablas();
     }
-    
+
     private void estiloFondo() {
-        setTitle("ÁvilaOS - Configuración de Simulación Distribuida");
+        setTitle("ÁvilaOS - Vista 1: Configuración de Simulación Distribuida");
         getContentPane().setBackground(COLOR_BG);
 
-        // 1. Estilar Etiquetas de Parámetros
         JLabel[] etiquetas = {jLabel1, jLabel2, jLabel3};
         for (JLabel lbl : etiquetas) {
             lbl.setForeground(COLOR_TEXT_MAIN);
             lbl.setFont(new Font("Segoe UI", Font.BOLD, 12));
         }
 
-        // 2. Estilar Títulos de las Secciones/Tablas (Buffers, Computadores, Procesos)
         JLabel[] titulosSecciones = {jLabel4, jLabel5, jLabel6};
         for (JLabel lbl : titulosSecciones) {
-            lbl.setForeground(COLOR_ACCENT_BLUE); // Azul brillante
+            lbl.setForeground(COLOR_ACCENT_BLUE);
             lbl.setFont(new Font("Segoe UI", Font.BOLD, 14));
         }
 
-        // 3. Estilar Campos de Texto
         JTextField[] campos = {txtDuracionCiclo, txtNumComp, txtLatenciaRed};
         for (JTextField txt : campos) {
             txt.setBackground(new Color(15, 20, 30));
@@ -69,31 +60,27 @@ public class VistaConfiguracion extends javax.swing.JFrame {
             ));
         }
 
-        // 4. Estilar Botones Principales y de Control
         estiloBoton(GuardarConfiguracion, COLOR_CARD_BG);
         estiloBoton(CargarArchivo, COLOR_CARD_BG);
         estiloBoton(Monitoreo, COLOR_ACCENT_GREEN);
-
-        // 5. Estilar Botones de Agregar y Eliminar
         estiloBoton(agregarBuffer, COLOR_CARD_BG);
         estiloBoton(quitarBuffer, COLOR_CARD_BG);
         estiloBoton(agregarProceso, COLOR_CARD_BG);
         estiloBoton(quitarProceso, COLOR_CARD_BG);
 
-        // 6. Estilar Tablas
         estiloTabla(tblComputadores);
         estiloTabla(tblBuffers);
         estiloTabla(tblProcesos);
     }
-        
+
     private void estiloBoton(JButton btn, Color colorFondo) {
         btn.setBackground(colorFondo);
         btn.setForeground(Color.WHITE);
         btn.setFont(new Font("Segoe UI", Font.BOLD, 12));
         btn.setFocusPainted(false);
         btn.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(COLOR_CARD_BG.brighter(), 1),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)
+            BorderFactory.createLineBorder(COLOR_CARD_BG.brighter(), 1),
+            BorderFactory.createEmptyBorder(5, 10, 5, 10)
         ));
     }
 
@@ -104,18 +91,9 @@ public class VistaConfiguracion extends javax.swing.JFrame {
         tabla.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         tabla.setRowHeight(24);
         tabla.setShowGrid(true);
-        tabla.setShowHorizontalLines(true);
-        tabla.setShowVerticalLines(true);
-
-        // Header de la tabla
         tabla.getTableHeader().setBackground(COLOR_PANEL_BG);
         tabla.getTableHeader().setForeground(COLOR_ACCENT_BLUE);
         tabla.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
-        tabla.getTableHeader().setBorder(BorderFactory.createLineBorder(COLOR_CARD_BG));
-
-        // Alineación y color para la celda seleccionada
-        tabla.setSelectionBackground(COLOR_CARD_BG);
-        tabla.setSelectionForeground(COLOR_TEXT_MAIN);
     }
 
     /**
