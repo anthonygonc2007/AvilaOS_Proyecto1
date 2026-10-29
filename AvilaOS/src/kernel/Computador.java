@@ -138,10 +138,18 @@ public class Computador implements IClockObserver {
         if (cpu.estaOcupada()) {
             gestorMetricas.registrarCicloCPU();
             Pcb enCpu = cpu.getProcesoEnEjecucion();
-
             if (enCpu.getTipo() == enums.ProcesoTipo.PRODUCTOR || enCpu.getTipo() == enums.ProcesoTipo.CONSUMIDOR) {
                 cpu.setModoSO();
                 procesarPcbBuffer(enCpu, buffers);
+            } else if (enCpu.getTipo() == enums.ProcesoTipo.IO_BOUND) {
+                cpu.ejecutarCiclo();
+                // Simulación E/S: Cada 4 instrucciones, se bloquea por 3 ciclos
+                if (enCpu.getProgramCounter() % 4 == 0 && enCpu.getEstado() == EstadoProceso.RUNNING) {
+                    enCpu.setMotivoBloqueo("ESPERANDO_IO");
+                    enCpu.setTiempoEsperaIO(3); // Retardo simulado de E/S
+                    cpu.setProcesoEnEjecucion(null);
+                    colaBloqueados.encolar(enCpu);
+                }
             } else {
                 cpu.ejecutarCiclo();
             }
@@ -208,18 +216,21 @@ public class Computador implements IClockObserver {
         decrementarDeadlinesCola(colaBloqueados);
     }
 
-    private void decrementarDeadlinesCola(Cola<Pcb> cola) {
+private void decrementarDeadlinesCola(Cola<Pcb> cola) {
         if (cola == null || cola.esVacia()) return;
         Cola<Pcb> aux = new Cola<>();
         while (!cola.esVacia()) {
             Pcb p = cola.desencolar();
             p.setDeadline(p.getDeadline() - 1);
 
-            // CORRECCIÓN 1: Expulsar el proceso si el tiempo se agotó
+            // Verificación y registro de fallo de Deadline
             if (p.getDeadline() <= 0 && p.getEstado() != EstadoProceso.EXIT) {
                 p.setEstado(EstadoProceso.EXIT);
                 memoriaRAM.liberarProceso(p);
                 colaTerminados.encolar(p);
+                
+                // <-- REGISTRO DE LA MÉTRICA EXIGIDA
+                gestorMetricas.registrarDeadlineFallado(); 
                 gestorMetricas.registrarProcesoCompletado(p, 0, p.getTiempoModoSO());
             } else {
                 aux.encolar(p);
@@ -229,22 +240,34 @@ public class Computador implements IClockObserver {
             cola.encolar(aux.desencolar());
         }
     }
+
     private void revisarDesbloqueados() {
-    if (colaBloqueados.esVacia()) return;
-    Cola<Pcb> aux = new Cola<>();
-    while (!colaBloqueados.esVacia()) {
-        Pcb p = colaBloqueados.desencolar();
-        // Si el semáforo interno del buffer ya le cambió el estado a READY
-        if (p.getEstado() == EstadoProceso.READY) {
-            colaListos.encolar(p);
-        } else {
-            aux.encolar(p);
+        if (colaBloqueados.esVacia()) return;
+        Cola<Pcb> aux = new Cola<>();
+        while (!colaBloqueados.esVacia()) {
+            Pcb p = colaBloqueados.desencolar();
+            
+            if (p.getEstado() == EstadoProceso.READY) {
+                // Despertados por un Semáforo
+                colaListos.encolar(p);
+            } else if ("ESPERANDO_IO".equals(p.getMotivoBloqueo())) {
+                // Lógica de recuperación para IO_BOUND
+                p.setTiempoEsperaIO(p.getTiempoEsperaIO() - 1);
+                if (p.getTiempoEsperaIO() <= 0) {
+                    p.setMotivoBloqueo("");
+                    p.setEstado(EstadoProceso.READY);
+                    colaListos.encolar(p);
+                } else {
+                    aux.encolar(p); // Sigue esperando
+                }
+            } else {
+                aux.encolar(p);
+            }
+        }
+        while (!aux.esVacia()) {
+            colaBloqueados.encolar(aux.desencolar());
         }
     }
-    while (!aux.esVacia()) {
-        colaBloqueados.encolar(aux.desencolar());
-    }
-}
 
     @Override
     public void tick(int cicloActual) {

@@ -20,6 +20,7 @@ public class Pcb {
     private ProcesoTipo tipo;
     private int prioridad;
     private int memoriaAsignada;
+    private int tiempoEsperaIO;
     private long deadline;
     private int tiempoRestanteEjecucion;
     
@@ -49,7 +50,8 @@ public class Pcb {
         this.memoryAddressRegister = 0;
         this.elementosProcesados = 0;
         this.motivoBloqueo = "";
-        this.tiempoModoSO = 0; // Inicializamos la contabilidad en 0
+        this.tiempoModoSO = 0;
+        this.tiempoEsperaIO = 0;
     }
 
     public void incrementarPC() {
@@ -113,4 +115,7 @@ public class Pcb {
     
     public String getMotivoBloqueo() { return motivoBloqueo; }
     public void setMotivoBloqueo(String motivoBloqueo) { this.motivoBloqueo = motivoBloqueo; }
+    
+    public int getTiempoEsperaIO() { return tiempoEsperaIO; }
+    public void setTiempoEsperaIO(int tiempoEsperaIO) { this.tiempoEsperaIO = tiempoEsperaIO; }
 }

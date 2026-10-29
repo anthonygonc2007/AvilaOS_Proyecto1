@@ -9,8 +9,7 @@ package metricas;
  * @author Gemelos
  */
 import kernel.Pcb;
-import java.util.ArrayList;
-import java.util.List;
+import estructuras.ListaEnlazada;
 
 public class GestorMetricas {
     private int totalProcesosCreados = 0;
@@ -25,12 +24,12 @@ public class GestorMetricas {
     private int tiempoTotalBloqueadoSemaforos = 0;
     
     // Para medir equidad (varianza del tiempo de CPU asignado)
-    private final List<Integer> tiemposAsignadosPorProceso = new ArrayList<>();
+    private final ListaEnlazada<Integer> tiemposAsignadosPorProceso = new ListaEnlazada<>();
 
-    public synchronized void registrarProcesoCompletado(Pcb proceso, int tiempoRespuesta, int tiempoCpuUtilizado) {
+public synchronized void registrarProcesoCompletado(Pcb proceso, int tiempoRespuesta, int tiempoCpuUtilizado) {
         this.procesosCompletados++;
         this.sumaTiemposRespuesta += tiempoRespuesta;
-        this.tiemposAsignadosPorProceso.add(tiempoCpuUtilizado);
+        this.tiemposAsignadosPorProceso.agregarAlFinal(tiempoCpuUtilizado); 
     }
 
     public synchronized void registrarCicloCPU() {
@@ -72,18 +71,20 @@ public class GestorMetricas {
      * Calcula la equidad usando el Índice de Jain (Jain's Fairness Index).
      * 1.0 representa equidad perfecta. Cerca de 0 indica inanición severa.
      */
-    public double calcularEquidad() {
-        if (tiemposAsignadosPorProceso.isEmpty()) return 1.0;
+public double calcularEquidad() {
+        if (tiemposAsignadosPorProceso.esVacia()) return 1.0;
         double suma = 0;
         double sumaCuadrados = 0;
         
-        for (int t : tiemposAsignadosPorProceso) {
+        int n = tiemposAsignadosPorProceso.getTamano();
+        for (int i = 0; i < n; i++) {
+            // Adaptado para obtener elementos de la ListaEnlazada
+            int t = tiemposAsignadosPorProceso.obtener(i); 
             suma += t;
             sumaCuadrados += (t * t);
         }
         
         if (sumaCuadrados == 0) return 1.0;
-        int n = tiemposAsignadosPorProceso.size();
         return (suma * suma) / (n * sumaCuadrados);
     }
 
